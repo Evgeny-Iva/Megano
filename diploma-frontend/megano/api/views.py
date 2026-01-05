@@ -1,3 +1,5 @@
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -90,7 +92,48 @@ class SignOutView(APIView):
 
 
 class CategoryListView(APIView):
+    """
+    API endpoint для получения структурированного меню категорий.
+
+    Возвращает иерархию категорий с подкатегориями.
+    Используется для построения навигации в каталоге.
+
+    Пример запроса:
+    GET /api/categories/
+
+    Возвращает:
+    [
+        {
+            "id": int,
+            "title": str,
+            "image": {"src": str, "alt": str},
+            "subcategories": [
+                {
+                    "id": 2,
+                    "title": "Видеокарты",
+                    "image": {"src": "/gpu.png", "alt": "Видеокарты"},
+                    "subcategories": []
+                }
+            ]
+        }
+    ]
+    Статусы ответов:
+    - 200: Успешный запрос
+    - 500: Ошибка сервера
+    """
     def get(self, request):
+        """
+        Обработка GET-запроса для получения категорий.
+
+        Возвращает только корневые категории (parent=None),
+        каждая содержит свои подкатегории в поле 'subcategories'.
+
+        Args:
+            request (HttpRequest): Запрос без параметров
+
+        Returns:
+            Response: JSON-массив с категориями и подкатегориями
+        """
         name = Category.object.all
 
         categories_data = []
@@ -110,7 +153,77 @@ class CategoryListView(APIView):
 
 
 class CatalogView(APIView):
+    """
+    API endpoint для получения товаров с фильтрацией и пагинацией.
+
+    Поддерживает:
+    - Фильтрацию по категории (?category=id)
+    - Текстовый поиск (?filter=текст)
+    - Сортировку по цене (?sortType=inc/dec)
+    - Пагинацию (?limit=20&currentPage=1)
+
+    Поддерживает:
+    - Фильтрацию по категории (?category=id)
+    - Текстовый поиск (?filter=текст)
+    - Сортировку по цене (?sortType=inc/dec)
+    - Пагинацию (?limit=20&currentPage=1)
+
+    Примеры запросов:
+    GET /api/catalog/?category=55&limit=10
+    GET /api/catalog/?filter=видеокарта&sortType=inc
+    GET /api/catalog/?currentPage=2&limit=5
+
+    Возвращает:
+    {
+        "items": [
+            {
+                "id": 123,
+                "title": "Видеокарта RTX 4090",
+                "price": 150000.0,
+                "category": 55,
+                "freeDelivery": true,
+                "rating": 4.8,
+                "date": "Thu Feb 09 2023 21:39:52 GMT+0100",
+                "count": 12,
+                "description": "Мощная игровая видеокарта",
+                "reviews": 47,
+                "tags": [{"id": 12, "name": "Gaming"}],
+                "images": [{"src": "/gpu.jpg", "alt": "Видеокарта RTX 4090"}]
+            }
+        ],
+        "currentPage": 1,
+        "lastPage": 8
+    }
+
+    Статусы ответов:
+    - 200: Успешный запрос
+    - 400: Неверные параметры запроса (например, limit='abc')
+    - 500: Ошибка сервера
+
+    Примечание:
+    - Дата возвращается в формате: "Thu Feb 09 2023 21:39:52 GMT+0100"
+    - Цена и рейтинг возвращаются как числа с плавающей точкой
+    """
     def get(self, request):
+        """
+        Обработка GET-запроса для получения товаров.
+
+        Args:
+            request (HttpRequest): Запрос с возможными параметрами:
+                - category (int, optional): ID категории для фильтрации
+                - filter (str, optional): Текст для поиска в названиях
+                - sortType (str, optional): 'inc' (по возрастанию) или
+                                      'dec' (по убыванию, по умолчанию)
+                - limit (int, optional): Количество товаров на странице (по умолчанию 20)
+                - currentPage (int, optional): Номер страницы (по умолчанию 1)
+
+        Returns:
+            Response: JSON с товарами и метаданными пагинации
+
+        Raises:
+        ValueError: Если limit или currentPage не являются числами
+        Product.DoesNotExist: Если категория не найдена (при фильтрации)
+        """
         products = Product.objects.all()
 
         category_id = request.GET.get('category')
@@ -172,3 +285,85 @@ class CatalogView(APIView):
         })
 
 
+@method_decorator(cache_page(300), name='dispatch')
+class PopularProductsView(APIView):
+    """
+    API endpoint для получения популярных товаров.
+
+    Возвращает топ-10 товаров по рейтингу.
+    Результат кэшируется на 5 минут для увеличения производительности.
+
+    Пример запроса:
+    GET /api/products/popular/
+
+    Возвращает:
+    [
+        {
+            "id": 123,
+            "title": "Видеокарта RTX 4090",
+            "price": 150000.0,
+            "category": 55,
+            "freeDelivery": true,
+            "rating": 4.8,
+            "date": "Thu Feb 09 2023 21:39:52 GMT+0100",
+            "count": 12,
+            "description": "Мощная игровая видеокарта",
+            "reviews": 47,
+            "tags": [{"id": 12, "name": "Gaming"}],
+            "images": [{"src": "/gpu.jpg", "alt": "Видеокарта RTX 4090"}]
+        },
+        ... еще 9 товаров
+    ]
+
+    Статусы ответов:
+    - 200: Успешный запрос
+    - 500: Ошибка сервера
+
+    Примечание:
+    - Для сброса кэша: python manage.py shell -> cache.clear()
+    - Товары без рейтинга (rating=0) не попадают в топ
+    """
+    def get(self, request):
+        """
+        Обработка GET-запроса для получения популярных товаров.
+
+        Алгоритм популярности: товары сортируются по рейтингу (rating)
+        в порядке убывания. Берутся первые 10 товаров.
+
+        Args:
+            request (HttpRequest): Запрос без параметров
+
+        Returns:
+            Response: JSON-массив с популярными товарами
+        """
+        popular_products = Product.objects.all()\
+            .order_by('-rating')\
+            .select_related('category')\
+            .prefetch_related('tags', 'images')[:10]
+
+        items = []
+        for product in popular_products:
+            date_str = format(
+                product.date.astimezone(pytz.timezone('Europe/Moscow')),
+                'D M d Y H:i:s O'
+            )
+            item = {
+                "id": product.id,
+                "title": product.title,
+                "price": float(product.price),
+                "category": product.category.id,
+                "freeDelivery": product.freeDelivery,
+                "rating": float(product.rating),
+                "date": date_str,
+                "count": product.count,
+                "description": product.description,
+                "reviews": product.reviews,
+            }
+            item.update({
+                "tags": [{"id": t.id, "name": t.name} for t in product.tags.all()],
+                "images": [{"src": i.src, "alt": i.alt} for i in product.images.all()]
+            })
+
+            items.append(item)
+
+        return Response(items)
