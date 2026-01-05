@@ -3,7 +3,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
+from .models import Category, Product
+from django.utils.dateformat import format
 import json
+import pytz
 
 
 class SignInView(APIView):
@@ -84,3 +87,88 @@ class SignOutView(APIView):
         """
         logout(request)
         return Response(status=status.HTTP_200_OK)
+
+
+class CategoryListView(APIView):
+    def get(self, request):
+        name = Category.object.all
+
+        categories_data = []
+        for category in name:
+            category_dict = {
+                'id': category.id,
+                'title': category.title,
+                'image': {
+                    'src': category.image_src,
+                    'alt': category.image_alt,
+                },
+                'subcategories': []
+            }
+            categories_data.append(category_dict)
+
+        return Response(categories_data)
+
+
+class CatalogView(APIView):
+    def get(self, request):
+        products = Product.objects.all()
+
+        category_id = request.GET.get('category')
+        search = request.GET.get('filter', '').strip()
+        sort_type = request.GET.get('sortType', 'dec')
+        limit = int(request.GET.get('limit', 20))
+        current_page = int(request.GET.get('currentPage', 1))
+
+        if category_id:
+            products = products.filter(category_id=category_id)
+
+        if search:
+            products = products.filter(title__icontains=search)
+
+        if sort_type == 'inc':
+            products = products.order_by('price')
+        else:
+            products = products.order_by('-price')
+
+        total_count = products.count()
+        last_page = (total_count + limit - 1) // limit
+
+        offset = (current_page - 1) * limit
+        products = products[offset:offset + limit]
+
+        products = products.select_related('category')\
+            .prefetch_related('tags', 'images')
+
+        items = []
+        for product in products:
+            date_str = format(
+                product.date.astimezone(pytz.timezone('Europe/Moscow')),
+                'D M d Y H:i:s O'
+            )
+            item = {
+                "id": product.id,
+                "title": product.title,
+                "price": float(product.price),
+                "category": product.category.id,
+                "freeDelivery": product.freeDelivery,
+                "rating": float(product.rating),
+                "date": date_str,
+                "count": product.count,
+                "description": product.description,
+                "reviews": product.reviews,
+            }
+
+            item.update({
+                "tags": [{"id": t.id, "name": t.name} for t in product.tags.all()],
+                "images": [{"src": i.src, "alt": i.alt} for i in product.images.all()]
+            })
+
+            items.append(item)
+
+        return Response({
+            "items": items,
+            "currentPage": current_page,
+            "lastPage": last_page
+        })
+
+
