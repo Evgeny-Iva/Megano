@@ -5,8 +5,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
-from .models import Category, Product
+from .models import Category, Product, Sale
 from django.utils.dateformat import format
+from django.utils import timezone
 import json
 import pytz
 
@@ -155,12 +156,6 @@ class CategoryListView(APIView):
 class CatalogView(APIView):
     """
     API endpoint для получения товаров с фильтрацией и пагинацией.
-
-    Поддерживает:
-    - Фильтрацию по категории (?category=id)
-    - Текстовый поиск (?filter=текст)
-    - Сортировку по цене (?sortType=inc/dec)
-    - Пагинацию (?limit=20&currentPage=1)
 
     Поддерживает:
     - Фильтрацию по категории (?category=id)
@@ -367,3 +362,117 @@ class PopularProductsView(APIView):
             items.append(item)
 
         return Response(items)
+
+
+class SalesView(APIView):
+    """
+    API endpoint для получения товаров со скидкой и пагинацией.
+
+    Возвращает пагинированный список товаров, на которые действует скидка
+    в текущий день. Скидка считается активной, если текущая дата находится
+    между date_from и date_to включительно.
+
+    Поддерживает пагинацию через параметры:
+    - limit (int, optional): Количество товаров на странице (по умолчанию 10)
+    - currentPage (int, optional): Номер текущей страницы (по умолчанию 1)
+
+    Пример запроса:
+    GET /api/sales/?limit=10&currentPage=2
+
+    Возвращает:
+    {
+        "items": [
+            {
+                "id": 123
+                "title": "Видеокарта RTX 4090",
+                "price": 150000.0,
+                "dateTo": ,
+                "dateFrom": ,
+                "salePrice": 10,
+                "images": [{"src": "/gpu.jpg", "alt": "Видеокарта RTX 4090"}]
+            }
+        ],
+        "currentPage": 1,
+        "lastPage": 8
+    }
+
+    Статусы ответов:
+    - 200: Успешный запрос
+    - 400: Неверные параметры (например, limit='abc')
+
+    Примечания:
+    - Поля dateFrom и dateTo возвращаются в формате MM-DD
+    - Если товар не имеет изображений, поле images содержит пустой массив
+    - Если запрошена несуществующая страница, возвращается пустой массив items
+    """
+
+    def get(self, request):
+        """
+        Обработка GET-запроса для получения товаров со скидкой.
+
+        Args:
+            request (HttpRequest): Объект запроса с опциональными параметрами:
+                - limit (str): Количество товаров на странице (по умолчанию "20")
+                - currentPage (str): Номер текущей страницы (по умолчанию "1")
+
+        Returns:
+            Response: JSON-ответ с товарами и метаданными пагинации.
+
+        Raises:
+            ValueError: Если параметры limit или currentPage не являются числами
+        """
+
+        try:
+            limit = int(request.GET.get('limit', 10))
+            current_page = int(request.GET.get('currentPage', 1))
+
+        except ValueError:
+            return Response({
+                "error": "Параметры limit и currentPage должны быть числами"
+            }, status=400)
+
+        active_sales = Sale.objects.get_active()
+
+        total_count = active_sales.count()
+        if total_count == 0:
+            last_page = 1
+        else:
+            last_page = (total_count + limit - 1) // limit
+
+        if current_page > last_page:
+            return Response({
+                "items": [],
+                "currentPage": current_page,
+                "lastPage": last_page
+            })
+
+        offset = (current_page - 1) * limit
+        paginated_sales = active_sales[offset:offset + limit]
+
+        paginated_sales = paginated_sales.select_related('product')
+
+        items = []
+        for sale in paginated_sales:
+            product = sale.product
+
+            item = {
+                "id": sale.id,
+                "title": product.title,
+                "price": float(product.price),
+                "dateTo": sale.date_to.strftime('%m-%d'),
+                "dateFrom": sale.date_from.strftime('%m-%d'),
+                "salePrice": float(sale.sale_price),
+            }
+            item.update({
+                "images": [
+                    {"src": i.src, "alt": i.alt}
+                    for i in product.images.all()[:1]
+                ]
+            })
+            items.append(item)
+
+        return Response({
+            "items": items,
+            "currentPage": current_page,
+            "lastPage": last_page
+        })
