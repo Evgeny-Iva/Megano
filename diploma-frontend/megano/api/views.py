@@ -8,8 +8,92 @@ from django.contrib.auth import authenticate, login, logout
 from .models import Category, Product, Sale
 from django.utils.dateformat import format
 from django.utils import timezone
-import json
-import pytz
+import pytz, logging, json
+
+
+logger = logging.getLogger(__name__)
+
+class PaginatorHelper:
+    """
+    Вспомогательный класс для пагинации в API endpoints.
+
+    Использование:
+    helper = PaginatorHelper(request)
+    limit, current_page = helper.get_validated_params()
+    offset = helper.calculate_offset()
+    last_page = helper.calculate_last_page(total_count)
+    """
+
+    def __init__(self, request, default_limit=20, max_limit=100):
+        self.request = request
+        self.default_limit = default_limit
+        self.max_limit = max_limit
+        self.original_limit = request.GET.get('limit')
+        self.original_page = request.GET.get('currentPage')
+
+    def get_validated_params(self):
+        """
+        Возвращает валидные limit и current_page с логированием.
+        """
+        limit = self._validate_limit()
+        current_page = self._validate_page()
+        return limit, current_page
+
+    def _validate_limit(self):
+        """Валидация параметра limit"""
+        if self.original_limit is None:
+            return self.default_limit
+
+        try:
+            limit = int(self.original_limit)
+            if limit <= 0:
+                logger.warning(f"Слишком маленький limit: {self.original_limit}")
+                return self.default_limit
+            elif limit > self.max_limit:
+                logger.info(f"Большой limit: {self.original_limit}")
+                return self.max_limit
+            return limit
+        except (ValueError, TypeError):
+            logger.warning(f"Некорректный limit: {self.original_limit}")
+            return self.default_limit
+
+    def _validate_page(self):
+        """Валидация параметра currentPage"""
+        if self.original_page is None:
+            return 1
+
+        try:
+            current_page = int(self.original_page)
+            if current_page <= 0:
+                logger.warning(f"Некорректная страница: {self.original_page}")
+                return 1
+            return current_page
+        except (ValueError, TypeError):
+            logger.warning(f"Некорректный currentPage: {self.original_page}")
+            return 1
+
+    def calculate_offset(self, current_page, limit):
+        """Вычисляет offset для пагинации"""
+        return (current_page - 1) * limit
+
+    def calculate_last_page(self, total_count, limit):
+        """Вычисляет общее количество страниц"""
+        if total_count == 0:
+            return 1
+        return (total_count + limit - 1) // limit  # округление вверх
+
+    def adjust_current_page(self, current_page, last_page):
+        """
+        Корректирует current_page если она больше last_page.
+        Возвращает скорректированную страницу.
+        """
+        if current_page > last_page and last_page > 0:
+            logger.info(
+                f"Запрошена несуществующая страница: {current_page}, "
+                f"всего страниц: {last_page}"
+            )
+            return last_page
+        return current_page
 
 
 class SignInView(APIView):
@@ -389,7 +473,12 @@ class SalesView(APIView):
                 "dateTo": ,
                 "dateFrom": ,
                 "salePrice": 10,
-                "images": [{"src": "/gpu.jpg", "alt": "Видеокарта RTX 4090"}]
+                "images": [
+                    {
+                        "src": "/gpu.jpg",
+                        "alt": "Видеокарта RTX 4090"
+                    }
+                ]
             }
         ],
         "currentPage": 1,
@@ -404,6 +493,7 @@ class SalesView(APIView):
     - Поля dateFrom и dateTo возвращаются в формате MM-DD
     - Если товар не имеет изображений, поле images содержит пустой массив
     - Если запрошена несуществующая страница, возвращается пустой массив items
+    - ID в ответе — это ID товара (Product), а не скидки (Sale)
     """
 
     def get(self, request):
@@ -418,26 +508,20 @@ class SalesView(APIView):
         Returns:
             Response: JSON-ответ с товарами и метаданными пагинации.
 
-        Raises:
-            ValueError: Если параметры limit или currentPage не являются числами
+        Notes:
+            - Некорректные параметры автоматически корректируются
+            - Если запрошена несуществующая страница, возвращается пустой items
+            - Если нет активных скидок, items будет пустым массивом
         """
 
-        try:
-            limit = int(request.GET.get('limit', 10))
-            current_page = int(request.GET.get('currentPage', 1))
-
-        except ValueError:
-            return Response({
-                "error": "Параметры limit и currentPage должны быть числами"
-            }, status=400)
+        paginator = PaginatorHelper(request)
+        limit, current_page = paginator.get_validated_params()
 
         active_sales = Sale.objects.get_active()
 
         total_count = active_sales.count()
-        if total_count == 0:
-            last_page = 1
-        else:
-            last_page = (total_count + limit - 1) // limit
+        last_page = paginator.calculate_last_page(total_count, limit)
+        current_page = paginator.adjust_current_page(current_page, last_page)
 
         if current_page > last_page:
             return Response({
@@ -446,7 +530,7 @@ class SalesView(APIView):
                 "lastPage": last_page
             })
 
-        offset = (current_page - 1) * limit
+        offset = paginator.calculate_offset(current_page, limit)
         paginated_sales = active_sales[offset:offset + limit]
 
         paginated_sales = paginated_sales.select_related('product')
@@ -456,7 +540,7 @@ class SalesView(APIView):
             product = sale.product
 
             item = {
-                "id": sale.id,
+                "id": sale.product,
                 "title": product.title,
                 "price": float(product.price),
                 "dateTo": sale.date_to.strftime('%m-%d'),
