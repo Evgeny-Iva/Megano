@@ -665,3 +665,5 @@ class BannersView(APIView):
             ]
 
             banners_data.append(banner)
+
+        return Response(banners_data)
