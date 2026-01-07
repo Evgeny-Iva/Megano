@@ -568,3 +568,100 @@ class SalesView(APIView):
             "currentPage": current_page,
             "lastPage": last_page
         })
+
+
+@method_decorator(cache_page(300), name='dispatch')
+class BannersView(APIView):
+    """
+    API endpoint для получения баннеров для главной страницы.
+
+    Баннеры — это специально отобранные товары для показа на главной странице.
+    В текущей реализации возвращаются 5 товаров с наивысшим рейтингом.
+
+    Пример запроса:
+    GET /api/banners/
+
+    Возвращает:
+    [
+        {
+            "id": 123,
+            "category": 55,
+            "price": 500.67,
+            "count": 12,
+            "date": "Thu Feb 09 2023 21:39:52 GMT+0100",
+            "title": "video card",
+            "description": "description of the product",
+            "freeDelivery": true,
+            "images": [
+                {
+                "src": "/3.png",
+                "alt": "Image alt string"
+                }
+            ],
+            "tags": [
+                {
+                "id": 12,
+                "name": "Gaming"
+                }
+            ],
+            "reviews": 5,
+            "rating": 4.6
+        },
+    ]
+
+    Особенности:
+        - Возвращает 5 товаров с наивысшим рейтингом
+        - Данные кэшируются на 5 минут для производительности
+        - Формат даты соответствует JavaScript Date toString()
+    """
+
+    def get(self, request):
+        """
+        Обработка GET-запроса для получения баннеров.
+
+        Возвращает 5 товаров с наивысшим рейтингом.
+        Выборка закеширована для повышения производительности.
+
+        Returns:
+            Response: JSON-массив товаров в формате баннеров.
+        """
+
+        banner_products = Product.objects.all()\
+            .order_by('-rating')\
+            .select_related('category')\
+            .prefetch_related('tags', 'images')[:5]
+
+        banners_data = []
+        for product in banner_products:
+            date_str = format(
+                product.date.astimezone(pytz.timezone('Europe/Moscow')),
+                'D M d Y H:i:s O'
+            )
+            banner = {
+                "id": product.id,
+                "title": product.title,
+                "price": float(product.price),
+                "category": product.category.id,
+                "freeDelivery": product.freeDelivery,
+                "rating": float(product.rating),
+                "date": date_str,
+                "count": product.count,
+                "description": product.description,
+                "reviews": product.reviews,
+            }
+
+            first_image = product.images.first()
+            if first_image:
+                banner["images"] = [{
+                    "src": first_image.src,
+                    "alt": first_image.alt
+                }]
+            else:
+                banner["images"] = []
+
+            banner["tags"] = [
+                {"id": tag.id, "name": tag.name}
+                for tag in product.tags.all()
+            ]
+
+            banners_data.append(banner)
