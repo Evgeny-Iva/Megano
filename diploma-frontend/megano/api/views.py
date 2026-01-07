@@ -18,10 +18,10 @@ class PaginatorHelper:
     Вспомогательный класс для пагинации в API endpoints.
 
     Использование:
-    helper = PaginatorHelper(request)
-    limit, current_page = helper.get_validated_params()
-    offset = helper.calculate_offset()
-    last_page = helper.calculate_last_page(total_count)
+        helper = PaginatorHelper(request)
+        limit, current_page = helper.get_validated_params()
+        offset = helper.calculate_offset()
+        last_page = helper.calculate_last_page(total_count)
     """
 
     def __init__(self, request, default_limit=20, max_limit=100):
@@ -104,12 +104,12 @@ class SignInView(APIView):
         Обработка POST-запроса на вход в систему
 
         Ожидание JSON с полями:
-        - username
-        - password
+            - username
+            - password
 
         Возращение:
-        - 200 OK при успехе
-        - 500 Internal Server Error при ошибке
+            - 200 OK при успехе
+            - 500 Internal Server Error при ошибке
         """
         try:
             username = request.data.get('username', '').strip()
@@ -138,13 +138,13 @@ class SignUpView(APIView):
         Обработка POST-запроса на регистрацию.
 
         Ожидание JSON с полями:
-        - username
-        - password
-        - name
+            - username
+            - password
+            - name
 
         возращение:
-        - 200 OK при успехе
-        - 500 Internal Server Error при ошибке
+            - 200 OK при успехе
+            - 500 Internal Server Error при ошибке
         """
         try:
             name = request.data.get('name', '').strip()
@@ -203,8 +203,8 @@ class CategoryListView(APIView):
         }
     ]
     Статусы ответов:
-    - 200: Успешный запрос
-    - 500: Ошибка сервера
+        - 200: Успешный запрос
+        - 500: Ошибка сервера
     """
     def get(self, request):
         """
@@ -299,17 +299,18 @@ class CatalogView(APIView):
         Returns:
             Response: JSON с товарами и метаданными пагинации
 
-        Raises:
-        ValueError: Если limit или currentPage не являются числами
-        Product.DoesNotExist: Если категория не найдена (при фильтрации)
+        Особенности:
+            - Параметры limit и currentPage автоматически корректируются при ошибках
+            - Несуществующая категория приводит к пустому результату (без ошибки)
         """
+
+        paginator = PaginatorHelper(request)
+        limit, current_page = paginator.get_validated_params()
         products = Product.objects.all()
 
         category_id = request.GET.get('category')
         search = request.GET.get('filter', '').strip()
         sort_type = request.GET.get('sortType', 'dec')
-        limit = int(request.GET.get('limit', 20))
-        current_page = int(request.GET.get('currentPage', 1))
 
         if category_id:
             products = products.filter(category_id=category_id)
@@ -323,9 +324,16 @@ class CatalogView(APIView):
             products = products.order_by('-price')
 
         total_count = products.count()
-        last_page = (total_count + limit - 1) // limit
+        last_page = paginator.calculate_last_page(total_count, limit)
 
-        offset = (current_page - 1) * limit
+        if current_page > last_page:
+            return Response({
+                "items": [],
+                "currentPage": current_page,
+                "lastPage": last_page
+            })
+
+        offset = paginator.calculate_offset(current_page, limit)
         products = products[offset:offset + limit]
 
         products = products.select_related('category')\
@@ -395,12 +403,12 @@ class PopularProductsView(APIView):
     ]
 
     Статусы ответов:
-    - 200: Успешный запрос
-    - 500: Ошибка сервера
+        - 200: Успешный запрос
+        - 500: Ошибка сервера
 
     Примечание:
-    - Для сброса кэша: python manage.py shell -> cache.clear()
-    - Товары без рейтинга (rating=0) не попадают в топ
+        - Для сброса кэша: python manage.py shell -> cache.clear()
+        - Товары без рейтинга (rating=0) не попадают в топ
     """
     def get(self, request):
         """
@@ -457,8 +465,8 @@ class SalesView(APIView):
     между date_from и date_to включительно.
 
     Поддерживает пагинацию через параметры:
-    - limit (int, optional): Количество товаров на странице (по умолчанию 10)
-    - currentPage (int, optional): Номер текущей страницы (по умолчанию 1)
+        - limit (int, optional): Количество товаров на странице (по умолчанию 10)
+        - currentPage (int, optional): Номер текущей страницы (по умолчанию 1)
 
     Пример запроса:
     GET /api/sales/?limit=10&currentPage=2
@@ -486,14 +494,14 @@ class SalesView(APIView):
     }
 
     Статусы ответов:
-    - 200: Успешный запрос
-    - 400: Неверные параметры (например, limit='abc')
+        - 200: Успешный запрос
+        - 400: Неверные параметры (например, limit='abc')
 
     Примечания:
-    - Поля dateFrom и dateTo возвращаются в формате MM-DD
-    - Если товар не имеет изображений, поле images содержит пустой массив
-    - Если запрошена несуществующая страница, возвращается пустой массив items
-    - ID в ответе — это ID товара (Product), а не скидки (Sale)
+        - Поля dateFrom и dateTo возвращаются в формате MM-DD
+        - Если товар не имеет изображений, поле images содержит пустой массив
+        - Если запрошена несуществующая страница, возвращается пустой массив items
+        - ID в ответе — это ID товара (Product), а не скидки (Sale)
     """
 
     def get(self, request):
