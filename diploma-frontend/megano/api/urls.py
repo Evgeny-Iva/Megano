@@ -8,7 +8,6 @@ from .views import (
 )
 
 urlpatterns = [
-    # path('banners/', ...),
     path('categories/', CategoryListView.as_view(), name='categories'),
     path('catalog/', CatalogView.as_view(), name='catalog'),
     path('products/popular/', PopularProductsView.as_view(), name='popular-products'),
