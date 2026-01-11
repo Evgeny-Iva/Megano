@@ -2,11 +2,13 @@ from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
-from .models import Category, Product, Sale
+from .models import Category, Product, Sale, Basket
+from .serializers import BasketResponseSerializer, AddToBasketSerializer
 from django.utils.dateformat import format
+from django.db.models import Sum, F
 from django.utils import timezone
 import pytz, logging, json
 
@@ -667,3 +669,197 @@ class BannersView(APIView):
             banners_data.append(banner)
 
         return Response(banners_data)
+
+
+class BasketView(APIView):
+    """
+    API endpoint для управления корзиной пользователя.
+
+    Пример запроса:
+        GET    /api/basket/ - Получить содержимое корзины
+        POST   /api/basket/ - Добавить товар в корзину
+
+    Требует аутентификации.
+
+    Возвращает:
+        {
+            "items": [
+                {
+                    "id": 123,
+                    "category": 55,
+                    "price": 500.67,
+                    "count": 3,
+                    "date": "Thu Feb 09 2023 21:39:52 GMT+0100",
+                    "title": "video card",
+                    "description": "description of the product",
+                    "freeDelivery": true,
+                    "images": [
+                        {
+                            "src": "/3.png",
+                            "alt": "Image alt string"
+                        }
+                    ],
+                    "tags": [
+                        {
+                            "id": 12,
+                            "name": "Gaming"
+                        }
+                    ],
+                    "reviews": 5,
+                    "rating": 4.6
+                }
+            ],
+            "totalCount": 5,
+            "totalPrice": 2500.35
+        }
+
+    Возвращает:
+        {
+            "id": 123,
+            "count": 2
+        }
+
+    Возвращает:
+        {
+            "id": 123,
+            "count": 3
+        }
+
+    Статусы ответов:
+        - 200: Успешно (GET или обновление существующего товара)
+        - 201: Товар добавлен в корзину (POST для нового товара)
+        - 400: Ошибка валидации (неверные данные)
+        - 401: Не авторизован
+        - 404: Товар не найден
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """
+        GET /api/basket/ - Получить все товары в корзине.
+
+        Возвращает список товаров в корзине пользователя с подсчётом итогов.
+        Каждый товар содержит полную информацию + поле 'count' (количество в корзине).
+
+        Returns:
+            Response: JSON с товарами и summary.
+        """
+
+        basket_items = Basket.objects.filter(user=request.user)\
+            .select_related('product', 'product__category')\
+            .prefetch_related('product__images', 'product__tags')
+
+        serializer = BasketResponseSerializer(basket_items, many=True)
+
+        total_count = basket_items.aggregate(total=Sum('quantity'))['total'] or 0
+        total_price = sum(item.total_price for item in basket_items)
+
+        return Response({
+            "items": serializer.data,
+            "totalCount": total_count,
+            "totalPrice": float(total_price)
+        })
+
+    def post(self, request):
+        """
+        POST /api/basket/ - Добавить товар в корзину.
+
+        Добавляет товар в корзину. Если товар уже есть в корзине - увеличивает количество.
+        Проверяет доступность товара на складе.
+
+        Args:
+            request.data должна содержать:
+                - id (int): ID товара (обязательно)
+                - count (int): количество (по умолчанию 1, минимум 1)
+
+        Returns:
+            Response: JSON с id товара и новым количеством в корзине.
+
+        Raises:
+            ValidationError: Если товар не найден или недостаточно на складе.
+        """
+
+        serializer = AddToBasketSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        product = serializer.validated_data['product']
+        count = serializer.validated_data['count']
+
+        basket_item, created = Basket.objects.get_or_create(
+            user=request.user,
+            product=product,
+            defaults={'quantity': count}
+        )
+
+        if not created:
+            basket_item.quantity += count
+            basket_item.save()
+
+        return Response(
+            {"id": product.id, "count": basket_item.quantity},
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        )
+
+
+class BasketDeleteView(APIView):
+    """
+    API endpoint для удаления товаров из корзины.
+
+    Пример запроса:
+        DELETE /api/basket/ - Очистить корзину
+        DELETE /api/basket/{id}/ - Удалить конкретный товар
+
+    Требует аутентификации.
+
+    Пример DELETE /api/basket/ (очистка корзины):
+        Response:
+            {
+                "deleted": 5
+            }
+
+    Пример DELETE /api/basket/123/ (удаление товара):
+        Response: 204 No Content
+
+    Статусы ответов:
+        - 204: Успешно удалено
+        - 401: Не авторизован
+        - 404: Товар не найден в корзине
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, id=None):
+        """
+        DELETE /api/basket/ или /api/basket/{id}/ - Удалить товар(ы) из корзины.
+
+        Если id не указан: удаляет все товары из корзины пользователя.
+        Если id указан: удаляет конкретный товар из корзины.
+
+        Args:
+            id (int, optional): ID товара для удаления. Если None - очистить корзину.
+
+        Returns:
+            Response: Для очистки корзины - JSON с количеством удалённых товаров.
+                     Для удаления товара - 204 No Content.
+
+        Raises:
+            Http404: Если товар не найден в корзине (при удалении по id).
+        """
+
+        if id is None:
+            deleted_count, _ = Basket.objects.filter(user=request.user).delete()
+            return Response(
+                {"deleted": deleted_count},
+                status=status.HTTP_204_NO_CONTENT
+            )
+
+        try:
+            basket_item = Basket.objects.get(user=request.user, product_id=id)
+            basket_item.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Basket.DoesNotExist:
+            return Response(
+                {"error": "Product not found in basket"},
+                status=status.HTTP_404_NOT_FOUND
+            )

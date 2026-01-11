@@ -5,6 +5,8 @@ from .views import (
     PopularProductsView,
     SalesView,
     BannersView,
+    BasketView,
+    BasketDeleteView,
 )
 
 urlpatterns = [
@@ -13,4 +15,6 @@ urlpatterns = [
     path('products/popular/', PopularProductsView.as_view(), name='popular-products'),
     path('sales/', SalesView.as_view(), name='sales'),
     path('banners/', BannersView.as_view(), name='banners'),
+    path('cart/', BasketView.as_view(), name='cart'),
+    path('cart/<int:id>/', BasketDeleteView.as_view(), name='cart-item-delete'),
 ]

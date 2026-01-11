@@ -2,6 +2,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.core.validators import MinValueValidator
+
 
 
 class Avatar(models.Model):
@@ -183,3 +185,37 @@ class Sale(models.Model):
             discount = ((self.product.price - self.sale_price) / self.product.price) * 100
             return round(discount, 1)
         return 0
+
+
+class Basket(models.Model):
+    """Модель для хранения товаров в корзине пользователя"""
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name="Пользователь",
+    )
+
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        verbose_name="Товар",
+    )
+
+    quantity = models.PositiveIntegerField(
+        default=1,
+        validators=[MinValueValidator(1)],
+        verbose_name="Количество",
+    )
+
+    class Meta:
+        verbose_name = "Корзина"
+        verbose_name_plural = "Корзины"
+        unique_together = ['user', 'product']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.product.title} x{self.quantity}"
+
+    @property
+    def total_price(self):
+        """Общая стоимость позиции"""
+        return self.product.price * self.quantity
