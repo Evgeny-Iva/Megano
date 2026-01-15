@@ -1,16 +1,26 @@
-from django.views.decorators.cache import cache_page
-from django.utils.decorators import method_decorator
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status, permissions
-from django.contrib.auth.models import User
+import logging
+
+import pytz
+
 from django.contrib.auth import authenticate, login, logout
-from .models import Category, Product, Sale, Basket
-from .serializers import BasketResponseSerializer, AddToBasketSerializer
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.db.models import Sum
 from django.utils.dateformat import format
-from django.db.models import Sum, F
-from django.utils import timezone
-import pytz, logging, json
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+
+from rest_framework import permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .models import Basket, Category, Product, Sale
+from .serializers import (
+    AddToBasketSerializer,
+    BasketResponseSerializer,
+    CreateOrderSerializer,
+)
+from .services.order_service import OrderService
 
 
 logger = logging.getLogger(__name__)
@@ -153,8 +163,8 @@ class SignUpView(APIView):
             username = request.data.get('username', '').strip()
             password = request.data.get('password', '').strip()
 
-            user = User.objects.create_user(  #TODO стоит ли оставлять переменную если она не используется,
-                username=username,            # но это считается хорошим тоном
+            user = User.objects.create_user(
+                username=username,
                 password=password,
                 first_name=name
             )
@@ -863,3 +873,84 @@ class BasketDeleteView(APIView):
                 {"error": "Product not found in basket"},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+
+class OrderCreateView(APIView):
+    """
+    API endpoint для создания заказов
+
+    Endpoint: POST /api/orders/
+
+    Описание:
+    Создает новый заказ на основе товаров в корзине пользователя.
+    После успешного создания заказа корзина очищается.
+
+    Требования:
+        - Пользователь должен быть авторизован
+        - Корзина не должна быть пустой
+        - Все обязательные поля должны быть заполнены
+
+    Request Body (тело запроса):
+    {
+        "fullName": "Иван Иванов",
+        "email": "ivan@example.com",
+        "phone": "+79991234567",
+        "deliveryType": "ordinary",
+        "paymentType": "online",
+        "city": "Москва",
+        "address": "ул. Примерная, 1"
+    }
+
+    Response (Успешно - 201 Created):
+    {
+        "orderId": 1,
+        "totalCost": "2500.00",
+        "deliveryPrice": "0.00",
+        "status": "accepted"
+    }
+
+    Response (Ошибка - 400 Bad Request):
+    {
+        "error": "Корзина пуста"
+    }
+
+    Статусы ответов:
+        201 - Заказ успешно создан
+        400 - Неверные данные или пустая корзина
+        401 - Пользователь не авторизован
+
+    Логика работы:
+        1. Валидация входных данных через сериализатор
+        2. Передача данных в сервисный слой
+        3. Обработка бизнес-логики в сервисе
+        4. Возврат результата клиенту
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        """POST /api/orders/ - создать новый заказ"""
+
+        serializer = CreateOrderSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            order = OrderService.create_simple_order(
+                user=request.user,
+                data=serializer.validated_data
+            )
+        except ValidationError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response({
+            'orderId': order.id,
+            'totalCost': str(order.totalCost),
+            'deliveryPrice': str(order.deliveryPrice),
+            'status': order.status
+        }, status=status.HTTP_201_CREATED)

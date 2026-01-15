@@ -4,11 +4,26 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9ce353d5-3c07-49e8-893e-2d9e940ed4e2" name="Changes" comment="Настройка мастера" />
+    <list default="true" id="9ce353d5-3c07-49e8-893e-2d9e940ed4e2" name="Changes" comment="Настройка мастера">
+      <change afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/services/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/services/order_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/views.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
@@ -30,7 +45,7 @@
   &quot;keyToString&quot;: {
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;Order&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;
   }
 }</component>

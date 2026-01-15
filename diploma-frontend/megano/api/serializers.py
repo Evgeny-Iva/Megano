@@ -1,7 +1,9 @@
 from rest_framework import serializers
 from django.utils.dateformat import format
 import pytz
-from .models import Basket, Product
+from .models import Basket, Product, Order, OrderItem
+from django.db import transaction
+
 
 class BasketResponseSerializer(serializers.Serializer):
     """
@@ -105,3 +107,110 @@ class AddToBasketSerializer(serializers.Serializer):
 
         data['product'] = product
         return data
+
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    """Сериализатор для товара в заказе (вложенный)"""
+    id = serializers.IntegerField(source='product.id')
+    category = serializers.IntegerField(source='product.category.id')
+    price = serializers.DecimalField(source='price', max_digits=10, decimal_places=2)
+    count = serializers.IntegerField(source='quantity')
+    date = serializers.SerializerMethodField()
+    title = serializers.CharField(source='product.title')
+    description = serializers.CharField(source='product.description')
+    freeDelivery = serializers.BooleanField(source='product.free_delivery')
+    images = serializers.SerializerMethodField()
+    tags = serializers.SerializerMethodField()
+    reviews = serializers.IntegerField(source='product.reviews')
+    rating = serializers.FloatField(source='product.rating')
+
+    def get_date(self, obj):
+        date_obj = obj.product.date
+        return format(
+            date_obj.astimezone(pytz.timezone('Europe/Moscow')),
+            'D M d Y H:i:s O'
+        )
+
+    def get_images(self, obj):
+        first_image = obj.product.images.first()
+        if first_image:
+            return [{"src": first_image.src, "alt": first_image.alt}]
+        return []
+
+    def get_tags(self, obj):
+        return [
+            {"id": tag.id, "name": tag.name}
+            for tag in obj.product.tags.all()
+        ]
+
+    class Meta:
+        model = OrderItem
+        fields = [
+            'id', 'category', 'price', 'count', 'date',
+            'title', 'description', 'freeDelivery',
+            'images', 'tags', 'reviews', 'rating'
+        ]
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    """Основной сериализатор заказа"""
+    products = OrderItemSerializer(source='items', many=True, read_only=True)
+    createdAt = serializers.DateTimeField(
+        source='created_at',
+        format='%Y-%m-%d %H:%M',
+        read_only=True
+    )
+
+    class Meta:
+        model = Order
+        fields = [
+            'id', 'createdAt', 'fullName', 'email', 'phone',
+            'deliveryType', 'paymentType', 'totalCost', 'status',
+            'city', 'address', 'products'
+        ]
+        read_only_fields = ['id', 'createdAt', 'totalCost', 'status']
+
+    def validate(self, data):
+        """Проверяем что корзина не пустая"""
+        request = self.context.get('request')
+        if request and not Basket.objects.filter(user=request.user).exists():
+            raise serializers.ValidationError({"detail": "Корзина пуста"})
+        return data
+
+
+class CreateOrderSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для создания нового заказа
+
+    Валидирует данные перед созданием заказа:
+    - Проверяет обязательные поля
+    - Валидирует форматы данных
+
+    Fields:
+    - fullName: Полное имя получателя (строка, обязательно)
+    - email: Email получателя (email, обязательно)
+    - phone: Телефон получателя (строка, обязательно)
+    - deliveryType: Тип доставки ['ordinary', 'express'] (строка, обязательно)
+    - paymentType: Тип оплаты ['online', 'cash'] (строка, обязательно)
+    - city: Город доставки (строка, обязательно для express доставки)
+    - address: Адрес доставки (строка, обязательно)
+
+    Пример запроса:
+    {
+        "fullName": "Иван Иванов",
+        "email": "ivan@example.com",
+        "phone": "+79991234567",
+        "deliveryType": "ordinary",
+        "paymentType": "online",
+        "city": "Москва",
+        "address": "ул. Примерная, 1"
+    }
+    """
+
+    class Meta:
+        model = Order
+        fields = [
+            'fullName', 'email', 'phone',
+            'deliveryType', 'paymentType',
+            'city', 'address'
+        ]
