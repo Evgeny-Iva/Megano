@@ -89,7 +89,7 @@ class AddToBasketSerializer(serializers.Serializer):
             dict: Валидированные данные с добавленным объектом product
 
         Raises:
-            serializers.ValidationError: При любой ошибке валидации
+            serializers. ValidationError: При любой ошибке валидации
         """
 
         product_id = data['id']
@@ -214,3 +214,18 @@ class CreateOrderSerializer(serializers.ModelSerializer):
             'deliveryType', 'paymentType',
             'city', 'address'
         ]
+
+
+class ActiveOrderSerializer(serializers.ModelSerializer):
+    """Сериализатор для активного заказа (GET /orders)"""
+    products = OrderItemSerializer(source='items', many=True, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            'id', 'createdAt', 'fullName',
+            'email', 'phone', 'deliveryType',
+            'paymentType', 'totalCost', 'status',
+            'city', 'address', 'products'
+        ]
+        read_only_fields = fields

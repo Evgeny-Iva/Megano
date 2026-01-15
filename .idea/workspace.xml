@@ -4,13 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9ce353d5-3c07-49e8-893e-2d9e940ed4e2" name="Changes" comment="Настройка мастера">
-      <change afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/services/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/services/order_service.py" afterDir="false" />
+    <list default="true" id="9ce353d5-3c07-49e8-893e-2d9e940ed4e2" name="Changes" comment="Написал для ордера сериалайзер, сервис, виюс, модель">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/serializers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -73,7 +69,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767349800562</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Написал для ордера сериалайзер, сервис, виюс, модель">
+      <option name="closed" value="true" />
+      <created>1768501901604</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1768501901604</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -102,6 +106,7 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Сделал Auth" />
     <MESSAGE value="Настройка мастера" />
-    <option name="LAST_COMMIT_MESSAGE" value="Настройка мастера" />
+    <MESSAGE value="Написал для ордера сериалайзер, сервис, виюс, модель" />
+    <option name="LAST_COMMIT_MESSAGE" value="Написал для ордера сериалайзер, сервис, виюс, модель" />
   </component>
 </project>

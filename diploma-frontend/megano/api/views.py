@@ -14,11 +14,12 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Basket, Category, Product, Sale
+from .models import Basket, Category, Product, Sale, Order
 from .serializers import (
     AddToBasketSerializer,
     BasketResponseSerializer,
     CreateOrderSerializer,
+    ActiveOrderSerializer,
 )
 from .services.order_service import OrderService
 
@@ -890,6 +891,8 @@ class OrderCreateView(APIView):
         - Корзина не должна быть пустой
         - Все обязательные поля должны быть заполнены
 
+    ==================== POST /api/orders/ ====================
+
     Request Body (тело запроса):
     {
         "fullName": "Иван Иванов",
@@ -914,19 +917,76 @@ class OrderCreateView(APIView):
         "error": "Корзина пуста"
     }
 
+    ==================== GET /api/orders/ ====================
+
+    Response (Успешно - 200 OK):
+    {
+        "id": 123,
+        "createdAt": "2023-05-05 12:12",
+        "fullName": "Amoying Orange",
+        "email": "no-reply@mail.ru",
+        "phone": "88888888888",
+        "deliveryType": "free",
+        "paymentType": "online",
+        "totalCost": 567.8,
+        "status": "accepted",
+        "city": "Moscow",
+        "address": "red square 1",
+        "products": [
+            {
+                "id": 123,
+                "category": 55,
+                "price": 500.67,
+                "count": 12,
+                "date": "Thu Feb 09 2023 21:39:52 GMT+0100",
+                "title": "video card",
+                "description": "description of the product",
+                "freeDelivery": true,
+                "images": [
+                    {
+                        "src": "/3.png",
+                        "alt": "Image alt string"
+                    }
+                ]
+            }
+        ]
+    }
+
+        Response (Нет активного заказа - 200 OK):
+    {}
+
     Статусы ответов:
+        200 - Успешный GET запрос или нет активного заказа
         201 - Заказ успешно создан
         400 - Неверные данные или пустая корзина
         401 - Пользователь не авторизован
 
-    Логика работы:
+    Логика работы (POST):
         1. Валидация входных данных через сериализатор
         2. Передача данных в сервисный слой
         3. Обработка бизнес-логики в сервисе
         4. Возврат результата клиенту
+
+        Логика работы (GET):
+        1. Поиск активного заказа пользователя
+        2. Сериализация данных заказа
+        3. Возврат результата клиенту
     """
 
     permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """GET /orders - получить активный заказ"""
+
+        active_order = Order.objects.filter(
+            user=request.user
+        ).order_by('-created_at').first()
+
+        if not active_order:
+            return Response({}, status=200)
+
+        serializer = ActiveOrderSerializer(active_order)
+        return Response(serializer.data, status=200)
 
     def post(self, request):
         """POST /api/orders/ - создать новый заказ"""
