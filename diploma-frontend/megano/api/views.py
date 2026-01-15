@@ -880,7 +880,9 @@ class OrderCreateView(APIView):
     """
     API endpoint для создания заказов
 
-    Endpoint: POST /api/orders/
+    Endpoint:
+        - POST /api/orders/  - создание нового заказа
+        - GET  /api/orders/  - получение активного заказа
 
     Описание:
     Создает новый заказ на основе товаров в корзине пользователя.
@@ -904,7 +906,7 @@ class OrderCreateView(APIView):
         "address": "ул. Примерная, 1"
     }
 
-    Response (Успешно - 200 Created):
+    Response (Успешно - 200 OK):
     {
         "orderId": 1,
         "totalCost": "2500.00",
@@ -956,7 +958,7 @@ class OrderCreateView(APIView):
     {}
 
     Статусы ответов:
-        200 - Успешный GET запрос или нет активного заказа
+        200 - Успешный GET или POST запрос
         400 - Неверные данные или пустая корзина
         401 - Пользователь не авторизован
 
