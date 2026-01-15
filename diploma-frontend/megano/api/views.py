@@ -904,7 +904,7 @@ class OrderCreateView(APIView):
         "address": "ул. Примерная, 1"
     }
 
-    Response (Успешно - 201 Created):
+    Response (Успешно - 200 Created):
     {
         "orderId": 1,
         "totalCost": "2500.00",
@@ -957,7 +957,6 @@ class OrderCreateView(APIView):
 
     Статусы ответов:
         200 - Успешный GET запрос или нет активного заказа
-        201 - Заказ успешно создан
         400 - Неверные данные или пустая корзина
         401 - Пользователь не авторизован
 
@@ -1013,4 +1012,4 @@ class OrderCreateView(APIView):
             'totalCost': str(order.totalCost),
             'deliveryPrice': str(order.deliveryPrice),
             'status': order.status
-        }, status=status.HTTP_201_CREATED)
+        }, status=status.HTTP_200_OK)
