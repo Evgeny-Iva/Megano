@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.utils.dateformat import format
 import pytz
 from .models import Basket, Product, Order, OrderItem
-from django.db import transaction
+from datetime import datetime
 
 
 class BasketResponseSerializer(serializers.Serializer):
@@ -216,16 +216,109 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         ]
 
 
-class ActiveOrderSerializer(serializers.ModelSerializer):
-    """Сериализатор для активного заказа (GET /orders)"""
-    products = OrderItemSerializer(source='items', many=True, read_only=True)
+class PaymentSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для данных оплаты
 
-    class Meta:
-        model = Order
-        fields = [
-            'id', 'createdAt', 'fullName',
-            'email', 'phone', 'deliveryType',
-            'paymentType', 'totalCost', 'status',
-            'city', 'address', 'products'
-        ]
-        read_only_fields = fields
+    Валидирует данные банковской карты:
+        - number: Номер карты (16-19 цифр)
+        - name: Имя владельца (строка)
+        - month: Месяц действия (01-12)
+        - year: Год действия (2023-2030)
+        - code: CVV код (3-4 цифры)
+    """
+    number = serializers.CharField(max_length=19)
+    name = serializers.CharField(max_length=50)
+    month = serializers.CharField(max_length=2)
+    year = serializers.CharField(max_length=4)
+    code = serializers.CharField(max_length=4)
+
+    def validate_number(self, value):
+        """Валидация номера карты"""
+        cleaned = value.replace(" ", "").replace("-", "")
+
+        if not cleaned.isdigit():
+            raise serializers.ValidationError(
+                "Номер карты должен содержать только цифры"
+            )
+
+        if len(cleaned) not in [16, 19]:
+            raise serializers.ValidationError(
+                "Номер карты должен содержать 16 или 19 цифр"
+            )
+
+        return cleaned
+
+    def validate_month(self, value):
+        """Валидация месяца"""
+        if not value.isdigit():
+            raise serializers.ValidationError(
+                "Месяц должен содержать только цифры"
+            )
+
+        if len(value) != 2:
+            raise serializers.ValidationError(
+                "Месяц должен содержать 2 цифр"
+            )
+
+        month_num = int(value)
+        if 0 < month_num < 13:
+            raise serializers.ValidationError(
+                "Месяц должен содержать цифр от 1 до 12 включительно"
+            )
+
+        return value.zfill(2)
+
+    def validate_year(self, value):
+        """Валидация года"""
+        if not value.isdigit():
+            raise serializers.ValidationError(
+                "Год должен содержать только цифры"
+            )
+
+        if len(value) != 4:
+            raise serializers.ValidationError(
+                "Год должен содержать 4 цифр"
+            )
+
+        year_num = int(value)
+        current_year = datetime.now().year
+        if current_year > year_num:
+            raise serializers.ValidationError(
+                "Год карты устарел"
+            )
+
+        if year_num > current_year + 10:
+            raise serializers.ValidationError(
+                "Срок действия карты слишком большой"
+            )
+
+        return value
+
+    def validate_code(self, value):
+        """Валидация CVV кода"""
+        if not value.isdigit():
+            raise serializers.ValidationError(
+                "CVV код должен содержать только цифры"
+            )
+
+        if len(value) not in [3, 4]:
+            raise serializers.ValidationError(
+                "CVV код должен содержать 3 или 4 цифр"
+            )
+
+        return value
+
+    def validate(self, data):
+        """Дополнительная валидация: срок действия карты"""
+        month = int(data['month'])
+        year = int(data['year'])
+        current_year = datetime.now().year
+        current_month = datetime.now().month
+
+        if year == current_year and month < current_month:
+            raise serializers.ValidationError({
+                "expiry": "Срок действия карты истек"
+            })
+
+        return data

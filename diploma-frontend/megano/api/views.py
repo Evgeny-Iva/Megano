@@ -9,6 +9,8 @@ from django.db.models import Sum
 from django.utils.dateformat import format
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+from django.utils import timezone
+from django.db import transaction
 
 from rest_framework import permissions, status
 from rest_framework.response import Response
@@ -19,7 +21,8 @@ from .serializers import (
     AddToBasketSerializer,
     BasketResponseSerializer,
     CreateOrderSerializer,
-    ActiveOrderSerializer,
+    OrderSerializer,
+    PaymentSerializer,
 )
 from .services.order_service import OrderService
 
@@ -986,7 +989,7 @@ class OrderCreateView(APIView):
         if not active_order:
             return Response({}, status=200)
 
-        serializer = ActiveOrderSerializer(active_order)
+        serializer = OrderSerializer(active_order)
         return Response(serializer.data, status=200)
 
     def post(self, request):
@@ -1014,4 +1017,189 @@ class OrderCreateView(APIView):
             'totalCost': str(order.totalCost),
             'deliveryPrice': str(order.deliveryPrice),
             'status': order.status
+        }, status=status.HTTP_200_OK)
+
+
+class OrderDetailView(APIView):
+    """
+    API endpoint для работы с конкретным заказом
+
+    Endpoints:
+    - GET  /orders/{id}/  - получение информации о заказе
+    - POST /orders/{id}/  - подтверждение заказа (изменение статуса)
+
+    Описание:
+    GET: Возвращает полную информацию о заказе
+    POST: Подтверждает заказ - меняет статус на 'confirmed' или 'paid'
+
+    Response (200 OK):
+    {
+        "id": 123,
+        "createdAt": "2023-05-05 12:12",
+        "fullName": "Amoying Orange",
+        "email": "no-reply@mail.ru",
+        "phone": "88888888888",
+        "deliveryType": "free",
+        "paymentType": "online",
+        "totalCost": 567.8,
+        "status": "accepted",
+        "city": "Moscow",
+        "address": "red square 1",
+        "products": [...]
+    }
+
+    Response (404 Not Found):
+    {
+        "error": "Заказ не найден"
+    }
+
+    Status Codes:
+        200 - Заказ найден
+        401 - Пользователь не авторизован
+        403 - Заказ принадлежит другому пользователю
+        404 - Заказ не найден
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, id):
+        """GET /orders/{id} - получить заказ по ID"""
+        try:
+            order = Order.objects.get(id=id)
+
+            if order.user != request.user:
+                return Response(
+                    {"error": "Доступ запрещен"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            serializer = OrderSerializer(order)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Order.DoesNotExist:
+            return Response(
+                {"error": "Заказ не найден"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    def post(self, request, id):
+        """POST /orders/{id}/ - подтвердить заказ"""
+        try:
+            order = Order.objects.get(id=id, user=request.user)
+
+            if order.status not in ['accepted', 'pending']:
+                return Response(
+                    {"error": f"Заказ уже в статусе '{order.status}'"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            order.status = 'confirmed'
+            order.save()
+
+            return Response({
+                "orderId": order.id,
+                "confirmed": True,
+                "status": order.status
+            }, status=status.HTTP_200_OK)
+
+        except Order.DoesNotExist:
+            return Response(
+                {"error": "Заказ не найден"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class PaymentView(APIView):
+    """
+    API endpoint для оплаты заказа
+
+    Endpoint: POST /payment/{id}/
+
+    Описание:
+    Принимает данные банковской карты и обрабатывает оплату заказа.
+    После успешной оплаты меняет статус заказа.
+
+    Request Body:
+    {
+        "number": "99999999999999",
+        "name": "Annoying Orange",
+        "month": "02",
+        "year": "2025",
+        "code": "123"
+    }
+
+    Response (200 OK):
+    {
+        "success": true,
+        "orderId": 123,
+        "message": "Оплата успешно проведена"
+    }
+
+    Response (400 Bad Request):
+    {
+        "error": "Неверные данные карты"
+    }
+
+    Response (404 Not Found):
+    {
+        "error": "Заказ не найден"
+    }
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id):
+        """POST /payment/{id}/ - оплатить заказ"""
+
+        try:
+            order = Order.objects.get(id=id, user=request.user)
+        except Order.DoesNotExist:
+            return Response(
+                {"error": "Заказ не найден"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = PaymentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        if order.status == 'paid':
+            return Response(
+                {"error": "Заказ уже оплачен"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if order.status not in ['accepted', 'confirmed']:
+            return Response(
+                {"error": f"Невозможно оплатить заказ в статусе '{order.status}'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            with transaction.atomic():
+
+                card_data = serializer.validated_data
+
+                if card_data['number'] == '4111111111111111':
+                    order.status = 'paid'
+                    order.save()
+                else:
+                    raise ValidationError("Карта отклонена банком")
+
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        except Exception as e:
+            logger.error(f"Ошибка оплаты заказа {id}: {str(e)}")
+            return Response(
+                {"error": "Произошла ошибка при обработке оплаты"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        return Response({
+            "success": True,
+            "orderId": order.id,
+            "message": "Оплата успешно проведена"
         }, status=status.HTTP_200_OK)
