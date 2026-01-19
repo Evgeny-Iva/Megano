@@ -16,6 +16,7 @@ from .views import (
     ProfileView,
     ChangePasswordView,
     AvatarUpdateView,
+    TagListView,
 )
 
 urlpatterns = [
@@ -30,6 +31,7 @@ urlpatterns = [
     path('orders/', OrderCreateView.as_view(), name='order-create'),
     path('payment/', PaymentView.as_view(), name='payment'),
     path('profile/', ProfileView.as_view(), name='profile'),
+    path('tags/', TagListView.as_view(), name='tags-list'),
     path('profile/password/', ChangePasswordView.as_view(), name='change-password'),
     path('profile/avatar/', AvatarUpdateView.as_view(), name='avatar-update'),
     path('products/popular/', PopularProductsView.as_view(), name='popular-products'),

@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.utils.dateformat import format
 import pytz
 import os
-from .models import Basket, Product, Order, OrderItem, Profile, User
+from .models import Basket, Product, Order, OrderItem, Profile, User, Tag
 from datetime import datetime
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import get_user_model
@@ -450,3 +450,9 @@ class AvatarUpdateSerializer(serializers.Serializer):
         instance.avatar = avatar_file
         instance.save()
         return instance
+
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ['id', 'name']

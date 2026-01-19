@@ -16,7 +16,7 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Basket, Category, Product, Sale, Order, Profile
+from .models import Basket, Category, Product, Sale, Order, Profile, Tag
 from .serializers import (
     AddToBasketSerializer,
     BasketResponseSerializer,
@@ -26,6 +26,7 @@ from .serializers import (
     ProfileSerializer,
     ChangePasswordSerializer,
     AvatarUpdateSerializer,
+    TagSerializer,
 )
 from .services.order_service import OrderService
 
@@ -1347,3 +1348,20 @@ class AvatarUpdateView(APIView):
                 serializer.errors,
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class TagListView(APIView):
+    """
+    GET /tags/ - список всех тегов
+    Параметры:
+    - category: фильтр по категории (опционально)
+    """
+    def get(self, request):
+        category_id = request.GET.get('category')
+        tags = Tag.objects.all()
+
+        if category_id:
+            tags = tags.filter(product__category_id=category_id).distinct()
+
+        serializer = TagSerializer(tags, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
