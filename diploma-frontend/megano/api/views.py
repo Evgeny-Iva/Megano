@@ -16,13 +16,16 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Basket, Category, Product, Sale, Order
+from .models import Basket, Category, Product, Sale, Order, Profile
 from .serializers import (
     AddToBasketSerializer,
     BasketResponseSerializer,
     CreateOrderSerializer,
     OrderSerializer,
     PaymentSerializer,
+    ProfileSerializer,
+    ChangePasswordSerializer,
+    AvatarUpdateSerializer,
 )
 from .services.order_service import OrderService
 
@@ -1203,3 +1206,144 @@ class PaymentView(APIView):
             "orderId": order.id,
             "message": "Оплата успешно проведена"
         }, status=status.HTTP_200_OK)
+
+
+class ProfileView(APIView):
+    """
+    API endpoint для работы с профилем
+
+    Endpoints:
+    GET  /api/profile/  - получить профиль
+    POST /api/profile/  - обновить профиль
+
+    Response (200 OK):
+    {
+        "fullName": "Иван Иванов",
+        "email": "ivan@example.com",
+        "phone": "+79991234567",
+        "avatar": "/media/avatars/user123.jpg"
+    }
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """GET /profile/ - получить профиль пользователя"""
+        try:
+            profile = Profile.objects.select_related(
+                'user', 'avatar'
+            ).get(user=request.user)
+            serializer = ProfileSerializer(profile)
+        except Profile.DoesNotExist:
+            return Response({
+                "fullName": request.user.get_full_name() or request.user.username,
+                "email": request.user.email,
+                "phone": "",
+                "avatar": None
+            }, status=status.HTTP_200_OK)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        """POST /api/profile/ - обновить профиль"""
+        serializer = ProfileSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        data = serializer.validated_data
+
+        if 'fullName' in data:
+            user.fullName = data['fullName']
+        if 'email' in data:
+            user.email = data['email']
+        if 'phone' in data:
+            user.phone = data['phone']
+
+        if 'avatar' in data:
+            avatar_data = data['avatar']
+            if 'src' in avatar_data:
+                user.avatar = avatar_data['src']
+
+        user.save()
+
+        return Response({
+            "fullName": user.fullName,
+            "email": user.email,
+            "phone": user.phone,
+            "avatar": {
+                "src": user.avatar.url if user.avatar else None,
+                "alt": user.get_full_name() or "Аватар пользователя"
+            }
+        }, status=status.HTTP_200_OK)
+
+
+class ChangePasswordView(APIView):
+    """
+    API endpoint для изменения пароля пользователя.
+
+    Methods:
+    POST /profile/password/ - Изменение пароля пользователя
+
+    Request Body:
+    {
+        "currentPassword": "oldPass123",
+        "newPassword": "newPass321"
+    }
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer.save()
+
+        return Response({
+            "success": True,
+            "message": "Пароль успешно изменен"
+        }, status=status.HTTP_200_OK)
+
+
+class AvatarUpdateView(APIView):
+    """
+    Обновление аватара пользователя.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+
+        if 'avatar' not in request.FILES:
+            return Response({
+            'error': 'File is required',
+            'message': 'Файл не был передан в запросе'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = AvatarUpdateSerializer(
+            instance=user,
+            data=request.data,
+            context={'request': request}
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Аватар успешно обновлен"},
+                status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )

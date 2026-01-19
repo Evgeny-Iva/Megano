@@ -1,8 +1,13 @@
 from rest_framework import serializers
 from django.utils.dateformat import format
 import pytz
-from .models import Basket, Product, Order, OrderItem
+import os
+from .models import Basket, Product, Order, OrderItem, Profile, User
 from datetime import datetime
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class BasketResponseSerializer(serializers.Serializer):
@@ -322,3 +327,126 @@ class PaymentSerializer(serializers.ModelSerializer):
             })
 
         return data
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для профиля пользователя
+    Поля: fullName, email, phone, avatar
+    """
+
+    fullName = serializers.CharField(source='fullName')
+    email = serializers.EmailField(source='user.email')
+    phone = serializers.CharField(source='phone')
+    avatar = serializers.SerializerMethodField()
+
+    def get_avatar(self, obj):
+        """Получаем данные аватара"""
+        if obj.avatar:
+            return {
+                "src": obj.avatar.src.url if obj.avatar.src else None,
+                "alt": obj.avatar.alt
+            }
+        return None
+
+    def validate_email(self, value):
+        """Валидация email на уникальность"""
+        request = self.context.get('request')
+        if request:
+            user = request.user
+            if User.objects.filter(email=value).exclude(id=user.id).exists():
+                raise serializers.ValidationError("Этот email уже используется")
+        return value
+
+    class Meta:
+        model = Profile
+        fields = ['fullName', 'email', 'phone', 'avatar']
+        read_only_fields = fields
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """
+    Сериализатор для изменения пароля пользователя.
+    """
+    current_password = serializers.CharField(
+        write_only=True,
+        required=True,
+        source='currentPassword'
+    )
+
+    new_password = serializers.CharField(
+        write_only=True,
+        required=True,
+        validators=[validate_password],
+        source='newPassword'
+    )
+
+    def validate(self, attrs):
+        """
+        Дополнительная валидация.
+        """
+        user = self.context['request'].user
+
+        if not user.check_password(attrs['current_password']):
+            raise serializers.ValidationError({"currentPassword": "Текущий пароль неверен"})
+
+        if attrs['current_password'] == attrs['new_password']:
+            raise serializers.ValidationError({"newPassword": "Новый пароль должен отличаться от текущего"})
+
+        return attrs
+
+    def save(self, **kwargs):
+        """
+        Сохранение нового пароля.
+        """
+        user = self.context['request'].user
+        new_password = self.validated_data['new_password']
+
+        user.set_password(new_password)
+        user.save()
+
+        return user
+
+
+class AvatarUpdateSerializer(serializers.Serializer):
+    """
+    Сериализатор для обновления аватара пользователя.
+
+    Принимает: файл изображения в поле 'avatar'
+    """
+    avatar = serializers.ImageField(
+        required=True,
+        max_length=None,
+        allow_empty_file=False,
+    )
+
+    def validate_avatar(self, value):
+        """
+        Валидация загружаемого файла.
+        """
+        max_size = 2 * 1024 * 1024
+        if value.size > max_size:
+            raise serializers.ValidationError(
+                'Файл слишком большой. Максимум 2 МБ.'
+            )
+
+        if not value.content_type.startswith('image/'):
+            raise serializers.ValidationError('Файл должен быть изображением')
+
+        allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif']
+        ext = os.path.splitext(value.name)[1].lower()
+        if ext not in allowed_extensions:
+            raise serializers.ValidationError(
+                'Поддерживаются только JPG, PNG, GIF'
+            )
+
+        return value
+
+    def update(self, instance, validated_data):
+        """
+        Обновление аватара пользователя.
+        """
+        avatar_file = validated_data.get('avatar')
+        instance.avatar = avatar_file
+        instance.save()
+        return instance
