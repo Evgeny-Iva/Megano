@@ -11,6 +11,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.utils import timezone
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 
 from rest_framework import permissions, status
 from rest_framework.response import Response
@@ -27,6 +28,7 @@ from .serializers import (
     ChangePasswordSerializer,
     AvatarUpdateSerializer,
     TagSerializer,
+    ProductDetailSerializer,
 )
 from .services.order_service import OrderService
 
@@ -1364,4 +1366,23 @@ class TagListView(APIView):
             tags = tags.filter(product__category_id=category_id).distinct()
 
         serializer = TagSerializer(tags, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ProductDetailView(APIView):
+    def get(self, request, id):
+        product = get_object_or_404(
+            Product.objects.select_related(
+                'category'
+            ).prefetch_related(
+                'images',
+                'tags',
+                'product_reviews',
+                'specifications'
+            ),
+            id=id
+        )
+
+        serializer = ProductDetailSerializer(product)
+
         return Response(serializer.data, status=status.HTTP_200_OK)

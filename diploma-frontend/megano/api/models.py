@@ -344,3 +344,28 @@ class OrderItem(models.Model):
         if not self.price:
             self.price = self.product.price
         super().save(*args, **kwargs)
+
+
+class Review(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_reviews')
+    author = models.CharField(max_length=100, verbose_name="Автор")
+    email = models.EmailField(verbose_name="Email")
+    text = models.TextField(max_length=300, verbose_name="Комментарий")
+    date = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    rate = models.DecimalField(
+        max_digits=3, decimal_places=1, default=0, verbose_name="Рейтинг"
+    )
+
+    class Meta:
+        verbose_name = "Комментарии в товаре"
+        verbose_name_plural = "Комментарии в товарах"
+
+
+class Specification(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='specifications')
+    name = models.CharField(verbose_name="Характеристика")
+    value = models.CharField(verbose_name="Значение")
+
+    class Meta:
+        verbose_name = "Спецификация товара"
+        verbose_name_plural = "Спецификация товаров"

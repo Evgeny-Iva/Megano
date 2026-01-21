@@ -1,9 +1,10 @@
-from rest_framework import serializers
-from django.utils.dateformat import format
 import pytz
 import os
-from .models import Basket, Product, Order, OrderItem, Profile, User, Tag
+from rest_framework import serializers
+from .models import Basket, Product, Order, OrderItem, Profile, User, Tag, ProductImage, Specification, Review
 from datetime import datetime
+from django.utils.dateformat import format
+from django.db.models import Avg
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import get_user_model
 
@@ -456,3 +457,71 @@ class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ['id', 'name']
+
+
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = ['src', 'alt']
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ['author', 'email', 'text', 'rate', 'date']
+
+    def to_representation(self, instance):
+        # Нужно ли форматировать дату?
+        # "date": "2023-05-05 12:12"
+        data = super().to_representation(instance)
+        # data['date'] = instance.date.strftime(...)
+        return data
+
+
+class SpecificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Specification
+        fields = ['name', 'value']
+
+
+class ProductDetailSerializer(serializers.ModelSerializer):
+    tags = serializers.SlugRelatedField(
+        many=True,
+        read_only=True,
+        slug_field='name'
+    )
+
+    specifications = SpecificationSerializer(
+        many=True,
+        source='specifications',
+        read_only=True
+    )
+
+    category = serializers.PrimaryKeyRelatedField(read_only=True)
+    images = ProductImageSerializer(many=True, read_only=True)
+    reviews = ReviewSerializer(many=True, source='product_reviews', read_only=True)
+    rating = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = [
+            'id', 'category', 'price', 'count', 'date',
+            'title', 'description', 'fullDescription',
+            'freeDelivery', 'images', 'tags', 'reviews',
+            'specifications', 'rating'
+        ]
+
+    def get_rating(self, obj):
+        """Вычисляем средний рейтинг из отзывов."""
+        avg_rating = obj.product_reviews.aggregate(Avg('rate'))['rate__avg']
+        return round(avg_rating, 1) if avg_rating else 0.0
+
+    def to_representation(self, instance):
+        """Форматирование даты товара."""
+        data = super().to_representation(instance)
+        formatted_date = instance.date.strftime('%a %b %d %Y %H:%M:%S')
+        tz_offset = instance.date.strftime('%z')
+
+        data['date'] = f"{formatted_date} GMT{tz_offset}"
+
+        return data
