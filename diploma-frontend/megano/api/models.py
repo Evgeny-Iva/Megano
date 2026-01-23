@@ -244,7 +244,7 @@ class Order(models.Model):
     ]
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
-    fullName = models.CharField(max_length=100, verbose_name="Полное имя")
+    full_name = models.CharField(max_length=100, verbose_name="Полное имя")
     email = models.EmailField(verbose_name="Email")
     phone = models.CharField(max_length=20, verbose_name="Телефон")
     city = models.CharField(max_length=100, verbose_name="Город")
@@ -295,8 +295,8 @@ class Order(models.Model):
 
     def save(self, *args, **kwargs):
         """Автоматически считаем сумму при сохранении"""
-        if not self.totalCost and hasattr(self, 'items'):
-            self.totalCost = sum(item.total_price for item in self.items.all())
+        if not self.total_cost and hasattr(self, 'items'):
+            self.total_cost = sum(item.total_price for item in self.items.all())
         super().save(*args, **kwargs)
 
 
@@ -353,7 +353,7 @@ class Review(models.Model):
     text = models.TextField(max_length=300, verbose_name="Комментарий")
     date = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     rate = models.DecimalField(
-        max_digits=3, decimal_places=1, default=0, max_length=5, verbose_name="Рейтинг"
+        max_digits=3, decimal_places=1, default=0, verbose_name="Рейтинг"
     )
 
     class Meta:
@@ -363,8 +363,8 @@ class Review(models.Model):
 
 class Specification(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='specifications')
-    name = models.CharField(verbose_name="Характеристика")
-    value = models.CharField(verbose_name="Значение")
+    name = models.CharField(max_length=100, verbose_name="Характеристика")
+    value = models.CharField(max_length=300, verbose_name="Значение")
 
     class Meta:
         verbose_name = "Спецификация товара"
