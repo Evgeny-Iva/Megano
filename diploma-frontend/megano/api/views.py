@@ -1,16 +1,37 @@
-from django.views.decorators.cache import cache_page
-from django.utils.decorators import method_decorator
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status, permissions
-from django.contrib.auth.models import User
+import logging
+
+import pytz
+
 from django.contrib.auth import authenticate, login, logout
-from .models import Category, Product, Sale, Basket
-from .serializers import BasketResponseSerializer, AddToBasketSerializer
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.db.models import Sum
 from django.utils.dateformat import format
-from django.db.models import Sum, F
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from django.utils import timezone
-import pytz, logging, json
+from django.db import transaction
+from django.shortcuts import get_object_or_404
+
+from rest_framework import permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .models import Basket, Category, Product, Sale, Order, Profile, Tag
+from .serializers import (
+    AddToBasketSerializer,
+    BasketResponseSerializer,
+    CreateOrderSerializer,
+    OrderSerializer,
+    PaymentSerializer,
+    ProfileSerializer,
+    ChangePasswordSerializer,
+    AvatarUpdateSerializer,
+    TagSerializer,
+    ProductDetailSerializer,
+    CreateReviewSerializer,
+)
+from .services.order_service import OrderService
 
 
 logger = logging.getLogger(__name__)
@@ -153,8 +174,8 @@ class SignUpView(APIView):
             username = request.data.get('username', '').strip()
             password = request.data.get('password', '').strip()
 
-            user = User.objects.create_user(  #TODO стоит ли оставлять переменную если она не используется,
-                username=username,            # но это считается хорошим тоном
+            user = User.objects.create_user(
+                username=username,
                 password=password,
                 first_name=name
             )
@@ -863,3 +884,613 @@ class BasketDeleteView(APIView):
                 {"error": "Product not found in basket"},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+
+class OrderCreateView(APIView):
+    """
+    API endpoint для создания заказов
+
+    Endpoint:
+        - POST /api/orders/  - создание нового заказа
+        - GET  /api/orders/  - получение активного заказа
+
+    Описание:
+    Создает новый заказ на основе товаров в корзине пользователя.
+    После успешного создания заказа корзина очищается.
+
+    Требования:
+        - Пользователь должен быть авторизован
+        - Корзина не должна быть пустой
+        - Все обязательные поля должны быть заполнены
+
+    ==================== POST /api/orders/ ====================
+
+    Request Body (тело запроса):
+    {
+        "fullName": "Иван Иванов",
+        "email": "ivan@example.com",
+        "phone": "+79991234567",
+        "deliveryType": "ordinary",
+        "paymentType": "online",
+        "city": "Москва",
+        "address": "ул. Примерная, 1"
+    }
+
+    Response (Успешно - 200 OK):
+    {
+        "orderId": 1,
+        "totalCost": "2500.00",
+        "deliveryPrice": "0.00",
+        "status": "accepted"
+    }
+
+    Response (Ошибка - 400 Bad Request):
+    {
+        "error": "Корзина пуста"
+    }
+
+    ==================== GET /api/orders/ ====================
+
+    Response (Успешно - 200 OK):
+    {
+        "id": 123,
+        "createdAt": "2023-05-05 12:12",
+        "fullName": "Amoying Orange",
+        "email": "no-reply@mail.ru",
+        "phone": "88888888888",
+        "deliveryType": "free",
+        "paymentType": "online",
+        "totalCost": 567.8,
+        "status": "accepted",
+        "city": "Moscow",
+        "address": "red square 1",
+        "products": [
+            {
+                "id": 123,
+                "category": 55,
+                "price": 500.67,
+                "count": 12,
+                "date": "Thu Feb 09 2023 21:39:52 GMT+0100",
+                "title": "video card",
+                "description": "description of the product",
+                "freeDelivery": true,
+                "images": [
+                    {
+                        "src": "/3.png",
+                        "alt": "Image alt string"
+                    }
+                ]
+            }
+        ]
+    }
+
+        Response (Нет активного заказа - 200 OK):
+    {}
+
+    Статусы ответов:
+        200 - Успешный GET или POST запрос
+        400 - Неверные данные или пустая корзина
+        401 - Пользователь не авторизован
+
+    Логика работы (POST):
+        1. Валидация входных данных через сериализатор
+        2. Передача данных в сервисный слой
+        3. Обработка бизнес-логики в сервисе
+        4. Возврат результата клиенту
+
+        Логика работы (GET):
+        1. Поиск активного заказа пользователя
+        2. Сериализация данных заказа
+        3. Возврат результата клиенту
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """GET /orders - получить активный заказ"""
+
+        active_order = Order.objects.filter(
+            user=request.user
+        ).order_by('-created_at').first()
+
+        if not active_order:
+            return Response({}, status=200)
+
+        serializer = OrderSerializer(active_order)
+        return Response(serializer.data, status=200)
+
+    def post(self, request):
+        """POST /api/orders/ - создать новый заказ"""
+
+        serializer = CreateOrderSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            order = OrderService.create_simple_order(
+                user=request.user,
+                data=serializer.validated_data
+            )
+        except ValidationError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response({
+            'orderId': order.id,
+            'totalCost': str(order.totalCost),
+            'deliveryPrice': str(order.deliveryPrice),
+            'status': order.status
+        }, status=status.HTTP_200_OK)
+
+
+class OrderDetailView(APIView):
+    """
+    API endpoint для работы с конкретным заказом
+
+    Endpoints:
+    - GET  /orders/{id}/  - получение информации о заказе
+    - POST /orders/{id}/  - подтверждение заказа (изменение статуса)
+
+    Описание:
+    GET: Возвращает полную информацию о заказе
+    POST: Подтверждает заказ - меняет статус на 'confirmed' или 'paid'
+
+    Response (200 OK):
+    {
+        "id": 123,
+        "createdAt": "2023-05-05 12:12",
+        "fullName": "Amoying Orange",
+        "email": "no-reply@mail.ru",
+        "phone": "88888888888",
+        "deliveryType": "free",
+        "paymentType": "online",
+        "totalCost": 567.8,
+        "status": "accepted",
+        "city": "Moscow",
+        "address": "red square 1",
+        "products": [...]
+    }
+
+    Response (404 Not Found):
+    {
+        "error": "Заказ не найден"
+    }
+
+    Status Codes:
+        200 - Заказ найден
+        401 - Пользователь не авторизован
+        403 - Заказ принадлежит другому пользователю
+        404 - Заказ не найден
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, id):
+        """GET /orders/{id} - получить заказ по ID"""
+        try:
+            order = Order.objects.get(id=id)
+
+            if order.user != request.user:
+                return Response(
+                    {"error": "Доступ запрещен"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            serializer = OrderSerializer(order)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Order.DoesNotExist:
+            return Response(
+                {"error": "Заказ не найден"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    def post(self, request, id):
+        """POST /orders/{id}/ - подтвердить заказ"""
+        try:
+            order = Order.objects.get(id=id, user=request.user)
+
+            if order.status not in ['accepted', 'pending']:
+                return Response(
+                    {"error": f"Заказ уже в статусе '{order.status}'"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            order.status = 'confirmed'
+            order.save()
+
+            return Response({
+                "orderId": order.id,
+                "confirmed": True,
+                "status": order.status
+            }, status=status.HTTP_200_OK)
+
+        except Order.DoesNotExist:
+            return Response(
+                {"error": "Заказ не найден"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class PaymentView(APIView):
+    """
+    API endpoint для оплаты заказа
+
+    Endpoint: POST /payment/{id}/
+
+    Описание:
+    Принимает данные банковской карты и обрабатывает оплату заказа.
+    После успешной оплаты меняет статус заказа.
+
+    Request Body:
+    {
+        "number": "99999999999999",
+        "name": "Annoying Orange",
+        "month": "02",
+        "year": "2025",
+        "code": "123"
+    }
+
+    Response (200 OK):
+    {
+        "success": true,
+        "orderId": 123,
+        "message": "Оплата успешно проведена"
+    }
+
+    Response (400 Bad Request):
+    {
+        "error": "Неверные данные карты"
+    }
+
+    Response (404 Not Found):
+    {
+        "error": "Заказ не найден"
+    }
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id):
+        """POST /payment/{id}/ - оплатить заказ"""
+
+        try:
+            order = Order.objects.get(id=id, user=request.user)
+        except Order.DoesNotExist:
+            return Response(
+                {"error": "Заказ не найден"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = PaymentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        if order.status == 'paid':
+            return Response(
+                {"error": "Заказ уже оплачен"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if order.status not in ['accepted', 'confirmed']:
+            return Response(
+                {"error": f"Невозможно оплатить заказ в статусе '{order.status}'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            with transaction.atomic():
+
+                card_data = serializer.validated_data
+
+                if card_data['number'] == '4111111111111111':
+                    order.status = 'paid'
+                    order.save()
+                else:
+                    raise ValidationError("Карта отклонена банком")
+
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        except Exception as e:
+            logger.error(f"Ошибка оплаты заказа {id}: {str(e)}")
+            return Response(
+                {"error": "Произошла ошибка при обработке оплаты"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        return Response({
+            "success": True,
+            "orderId": order.id,
+            "message": "Оплата успешно проведена"
+        }, status=status.HTTP_200_OK)
+
+
+class ProfileView(APIView):
+    """
+    API endpoint для работы с профилем
+
+    Endpoints:
+    GET  /api/profile/  - получить профиль
+    POST /api/profile/  - обновить профиль
+
+    Response (200 OK):
+    {
+        "fullName": "Иван Иванов",
+        "email": "ivan@example.com",
+        "phone": "+79991234567",
+        "avatar": "/media/avatars/user123.jpg"
+    }
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """GET /profile/ - получить профиль пользователя"""
+        try:
+            profile = Profile.objects.select_related(
+                'user', 'avatar'
+            ).get(user=request.user)
+            serializer = ProfileSerializer(profile)
+        except Profile.DoesNotExist:
+            return Response({
+                "fullName": request.user.get_full_name() or request.user.username,
+                "email": request.user.email,
+                "phone": "",
+                "avatar": None
+            }, status=status.HTTP_200_OK)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        """POST /api/profile/ - обновить профиль"""
+        serializer = ProfileSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        data = serializer.validated_data
+
+        if 'fullName' in data:
+            user.fullName = data['fullName']
+        if 'email' in data:
+            user.email = data['email']
+        if 'phone' in data:
+            user.phone = data['phone']
+
+        if 'avatar' in data:
+            avatar_data = data['avatar']
+            if 'src' in avatar_data:
+                user.avatar = avatar_data['src']
+
+        user.save()
+
+        return Response({
+            "fullName": user.fullName,
+            "email": user.email,
+            "phone": user.phone,
+            "avatar": {
+                "src": user.avatar.url if user.avatar else None,
+                "alt": user.get_full_name() or "Аватар пользователя"
+            }
+        }, status=status.HTTP_200_OK)
+
+
+class ChangePasswordView(APIView):
+    """
+    API endpoint для изменения пароля пользователя.
+
+    Пример запроса:
+    POST /profile/password/ - Изменение пароля пользователя
+
+    Требует аутентификации.
+
+    Request Body:
+    {
+        "currentPassword": "oldPass123",
+        "newPassword": "newPass321"
+    }
+
+    Статусы ответов:
+        200 - Пароль успешно изменен
+        400 - Ошибки валидации данных
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        """
+        Обработка POST-запроса для смены пароля.
+
+        Args:
+            request: Объект запроса с данными о текущем и новом пароле
+        """
+        serializer = ChangePasswordSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer.save()
+
+        return Response({
+            "success": True,
+            "message": "Пароль успешно изменен"
+        }, status=status.HTTP_200_OK)
+
+
+class AvatarUpdateView(APIView):
+    """
+    API endpoint для обновления аватара пользователя.
+
+    Пример запроса:
+    POST /profile/avatar/ - Изменение аватара пользователя
+
+    Требует аутентификации.
+
+    Статус ответа:
+        200 - Аватар успешно обновлен
+        400 - Файл не был передан в запросе
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        """
+        Обработка POST-запроса для смены аватара.
+
+        Args:
+            request: Объект запроса с файлом аватара в request.FILES
+        """
+        user = request.user
+
+        if 'avatar' not in request.FILES:
+            return Response({
+            'error': 'File is required',
+            'message': 'Файл не был передан в запросе'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = AvatarUpdateSerializer(
+            instance=user,
+            data=request.data,
+            context={'request': request}
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Аватар успешно обновлен"},
+                status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class TagListView(APIView):
+    """
+    API endpoint для списка тегов
+
+    Пример запроса:
+        GET /tags/ - список всех тегов
+
+    Параметры:
+    - category: фильтр по категории (опционально)
+
+    Статус ответа:
+        200 - Успешное получение данных
+    """
+    def get(self, request):
+        """
+        Получение списка тегов с возможностью фильтрации по категории.
+
+        Args:
+            request: Объект запроса с параметрами фильтрации
+        """
+        category_id = request.GET.get('category')
+        tags = Tag.objects.all()
+
+        if category_id:
+            tags = tags.filter(product__category_id=category_id).distinct()
+
+        serializer = TagSerializer(tags, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ProductDetailView(APIView):
+    """
+    API endpoint для получения детальной информации о товаре.
+
+    Пример запроса:
+        - /product/1/ - Для получения деталей о первом товаре
+
+    Статус ответа:
+        200 - Товар найден и возвращен
+        404 - Товар не найден
+    """
+    def get(self, request, id):
+        """
+        Получение детальной информации о товаре.
+
+        Args:
+            request: Объект запроса
+            id: Идентификатор товара
+        """
+        product = get_object_or_404(
+            Product.objects.select_related(
+                'category'
+            ).prefetch_related(
+                'images',
+                'tags',
+                'product_reviews',
+                'specifications'
+            ),
+            id=id
+        )
+
+        serializer = ProductDetailSerializer(product)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CreateReviewView(APIView):
+    """
+    API endpoint для создания комментария к товару.
+
+    Пример запроса:
+        POST /product/{id}/review - добавить отзыв к товару
+
+    Статус ответа:
+        201 - Отзыв успешно создан
+        400 - Ошибки валидации данных
+        404 - Товар не найден
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id):
+        """
+        Создание отзыва для товара
+
+        Args:
+            request: Объект запроса с данными отзыва
+            id: Идентификатор товара
+        """
+        get_object_or_404(Product, id=id)
+
+        serializer = CreateReviewSerializer(
+            data=request.data,
+            context={
+                'request': request,
+                'product_id': id
+            }
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        review = serializer.save()
+
+        return Response(
+            {
+                'id': review.id,
+                'message': 'Отзыв успешно добавлен'
+            },
+            status=status.HTTP_201_CREATED
+        )

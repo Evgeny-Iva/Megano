@@ -1,4 +1,3 @@
-from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -219,3 +218,154 @@ class Basket(models.Model):
     def total_price(self):
         """Общая стоимость позиции"""
         return self.product.price * self.quantity
+
+
+class Order(models.Model):
+    """Модель заказа пользователя."""
+    STATUS_CHOICES = [
+        ('pending', 'В обработке'),
+        ('accepted', 'Принят'),
+        ('paid', 'Оплачен'),
+        ('shipped', 'Отправлен'),
+        ('delivered', 'Доставлен'),
+        ('cancelled', 'Отменён'),
+    ]
+
+    DELIVERY_CHOICES = [
+        ('free', 'Бесплатная'),
+        ('express', 'Экспресс'),
+        ('pickup', 'Самовывоз'),
+    ]
+
+    PAYMENT_CHOICES = [
+        ('online', 'Онлайн'),
+        ('card', 'Картой при получении'),
+        ('cash', 'Наличными при получении'),
+    ]
+
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    full_name = models.CharField(max_length=100, verbose_name="Полное имя")
+    email = models.EmailField(verbose_name="Email")
+    phone = models.CharField(max_length=20, verbose_name="Телефон")
+    city = models.CharField(max_length=100, verbose_name="Город")
+    address = models.CharField(max_length=200, verbose_name="Адрес")
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='orders',
+        verbose_name="Пользователь"
+    )
+
+    delivery_type = models.CharField(
+        max_length=20,
+        choices=DELIVERY_CHOICES,
+        default='free',
+        verbose_name="Тип доставки"
+    )
+
+    payment_type = models.CharField(
+        max_length=20,
+        choices=PAYMENT_CHOICES,
+        default='online',
+        verbose_name="Тип оплаты"
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        verbose_name="Статус"
+    )
+
+    total_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        verbose_name="Общая стоимость"
+    )
+
+    class Meta:
+        verbose_name = "Заказ"
+        verbose_name_plural = "Заказы"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Заказ #{self.id} - {self.fullName} ({self.status})"
+
+    def save(self, *args, **kwargs):
+        """Автоматически считаем сумму при сохранении"""
+        if not self.total_cost and hasattr(self, 'items'):
+            self.total_cost = sum(item.total_price for item in self.items.all())
+        super().save(*args, **kwargs)
+
+
+class OrderItem(models.Model):
+    """Товар в заказе (связь Order-Product с количеством и фиксированной ценой)."""
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name='items',
+        verbose_name="Заказ"
+    )
+
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.PROTECT,
+        related_name='order_items',
+        verbose_name="Товар"
+    )
+
+    quantity = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)],
+        verbose_name="Количество"
+    )
+
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Цена на момент заказа"
+    )
+
+    class Meta:
+        verbose_name = "Товар в заказе"
+        verbose_name_plural = "Товары в заказе"
+        unique_together = ['order', 'product']
+
+    def __str__(self):
+        return f"{self.product.title} x{self.quantity} (заказ #{self.order.id})"
+
+    @property
+    def total_price(self):
+        return self.price * self.quantity
+
+    def save(self, *args, **kwargs):
+        """При сохранении фиксируем текущую цену товара"""
+        if not self.price:
+            self.price = self.product.price
+        super().save(*args, **kwargs)
+
+
+class Review(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_reviews')
+    author = models.CharField(max_length=100, verbose_name="Автор")
+    email = models.EmailField(verbose_name="Email")
+    text = models.TextField(max_length=300, verbose_name="Комментарий")
+    date = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    rate = models.DecimalField(
+        max_digits=3, decimal_places=1, default=0, verbose_name="Рейтинг"
+    )
+
+    class Meta:
+        verbose_name = "Комментарии в товаре"
+        verbose_name_plural = "Комментарии в товарах"
+
+
+class Specification(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='specifications')
+    name = models.CharField(max_length=100, verbose_name="Характеристика")
+    value = models.CharField(max_length=300, verbose_name="Значение")
+
+    class Meta:
+        verbose_name = "Спецификация товара"
+        verbose_name_plural = "Спецификация товаров"
