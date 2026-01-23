@@ -471,10 +471,19 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = ['author', 'email', 'text', 'rate', 'date']
 
     def to_representation(self, instance):
-        # Нужно ли форматировать дату?
-        # "date": "2023-05-05 12:12"
         data = super().to_representation(instance)
-        # data['date'] = instance.date.strftime(...)
+
+        if data['rate'] is not None:
+            rate_value = float(data['rate'])
+            if rate_value.is_integer():
+                data['rate'] = int(rate_value)
+            else:
+                data['rate'] = rate_value
+
+        if data['date']:
+            date_str = data['date'].replace('T', ' ')
+            data['date'] = date_str[:16]
+
         return data
 
 
@@ -485,6 +494,7 @@ class SpecificationSerializer(serializers.ModelSerializer):
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
+    """Сериалайзер для деталей продукта"""
     tags = serializers.SlugRelatedField(
         many=True,
         read_only=True,
@@ -525,3 +535,56 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         data['date'] = f"{formatted_date} GMT{tz_offset}"
 
         return data
+
+
+class CreateReviewSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для СОЗДАНИЯ отзыва.
+    Валидирует входящие данные.
+    """
+
+    rate = serializers.DecimalField(
+        max_digits=3,
+        decimal_places=1,
+        min_value=1,
+        max_value=5
+    )
+
+    date = serializers.CharField(required=False, allow_blank=True)
+
+    class Meta:
+        model = Review
+        fields = ['author', 'email', 'text', 'rate', 'date']
+
+    def validate_rate(self, value):
+        if not 1 <= value <= 5:
+            raise serializers.ValidationError("Рейтинг должен быть от 1 до 5")
+        return value
+
+    def validate_date(self, value):
+        if value:
+            try:
+                return datetime.strftime(value, '%Y-%m-%d %H:%M')
+            except ValueError:
+                raise serializers.ValidationError(
+                    "Неверная форма даты. Используйте: YYYY-MM-DD HH:MM"
+                )
+
+        return None
+
+
+    def create(self, validated_data):
+        """
+        Создание отзыва.
+        """
+        product_id = self.context.get('product_id')
+
+        if validated_data.get('date') is None:
+            validated_data.pop('date', None)
+
+        review = Review.objects.create(
+            product_id=product_id,
+            **validated_data
+        )
+
+        return review

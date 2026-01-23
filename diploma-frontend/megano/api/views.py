@@ -29,6 +29,7 @@ from .serializers import (
     AvatarUpdateSerializer,
     TagSerializer,
     ProductDetailSerializer,
+    CreateReviewSerializer,
 )
 from .services.order_service import OrderService
 
@@ -1287,18 +1288,30 @@ class ChangePasswordView(APIView):
     """
     API endpoint для изменения пароля пользователя.
 
-    Methods:
+    Пример запроса:
     POST /profile/password/ - Изменение пароля пользователя
+
+    Требует аутентификации.
 
     Request Body:
     {
         "currentPassword": "oldPass123",
         "newPassword": "newPass321"
     }
+
+    Статусы ответов:
+        200 - Пароль успешно изменен
+        400 - Ошибки валидации данных
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        """
+        Обработка POST-запроса для смены пароля.
+
+        Args:
+            request: Объект запроса с данными о текущем и новом пароле
+        """
         serializer = ChangePasswordSerializer(
             data=request.data,
             context={'request': request}
@@ -1320,11 +1333,26 @@ class ChangePasswordView(APIView):
 
 class AvatarUpdateView(APIView):
     """
-    Обновление аватара пользователя.
+    API endpoint для обновления аватара пользователя.
+
+    Пример запроса:
+    POST /profile/avatar/ - Изменение аватара пользователя
+
+    Требует аутентификации.
+
+    Статус ответа:
+        200 - Аватар успешно обновлен
+        400 - Файл не был передан в запросе
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        """
+        Обработка POST-запроса для смены аватара.
+
+        Args:
+            request: Объект запроса с файлом аватара в request.FILES
+        """
         user = request.user
 
         if 'avatar' not in request.FILES:
@@ -1354,11 +1382,24 @@ class AvatarUpdateView(APIView):
 
 class TagListView(APIView):
     """
-    GET /tags/ - список всех тегов
+    API endpoint для списка тегов
+
+    Пример запроса:
+        GET /tags/ - список всех тегов
+
     Параметры:
     - category: фильтр по категории (опционально)
+
+    Статус ответа:
+        200 - Успешное получение данных
     """
     def get(self, request):
+        """
+        Получение списка тегов с возможностью фильтрации по категории.
+
+        Args:
+            request: Объект запроса с параметрами фильтрации
+        """
         category_id = request.GET.get('category')
         tags = Tag.objects.all()
 
@@ -1370,7 +1411,24 @@ class TagListView(APIView):
 
 
 class ProductDetailView(APIView):
+    """
+    API endpoint для получения детальной информации о товаре.
+
+    Пример запроса:
+        - /product/1/ - Для получения деталей о первом товаре
+
+    Статус ответа:
+        200 - Товар найден и возвращен
+        404 - Товар не найден
+    """
     def get(self, request, id):
+        """
+        Получение детальной информации о товаре.
+
+        Args:
+            request: Объект запроса
+            id: Идентификатор товара
+        """
         product = get_object_or_404(
             Product.objects.select_related(
                 'category'
@@ -1386,3 +1444,53 @@ class ProductDetailView(APIView):
         serializer = ProductDetailSerializer(product)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CreateReviewView(APIView):
+    """
+    API endpoint для создания комментария к товару.
+
+    Пример запроса:
+        POST /product/{id}/review - добавить отзыв к товару
+
+    Статус ответа:
+        201 - Отзыв успешно создан
+        400 - Ошибки валидации данных
+        404 - Товар не найден
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id):
+        """
+        Создание отзыва для товара
+
+        Args:
+            request: Объект запроса с данными отзыва
+            id: Идентификатор товара
+        """
+        get_object_or_404(Product, id=id)
+
+        serializer = CreateReviewSerializer(
+            data=request.data,
+            context={
+                'request': request,
+                'product_id': id
+            }
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        review = serializer.save()
+
+        return Response(
+            {
+                'id': review.id,
+                'message': 'Отзыв успешно добавлен'
+            },
+            status=status.HTTP_201_CREATED
+        )

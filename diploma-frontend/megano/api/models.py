@@ -353,7 +353,7 @@ class Review(models.Model):
     text = models.TextField(max_length=300, verbose_name="Комментарий")
     date = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     rate = models.DecimalField(
-        max_digits=3, decimal_places=1, default=0, verbose_name="Рейтинг"
+        max_digits=3, decimal_places=1, default=0, max_length=5, verbose_name="Рейтинг"
     )
 
     class Meta:
