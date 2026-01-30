@@ -13,6 +13,7 @@ from django.utils import timezone
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 
+from rest_framework.authtoken.models import Token
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -144,8 +145,22 @@ class SignInView(APIView):
             user = authenticate(request, username=username, password=password)
 
             if user is not None:
-                login(request, user)
-                return Response(status=status.HTTP_200_OK)
+                token, created = Token.objects.get_or_create(user=user)
+                return Response({
+                    'token': token.key,
+                    'user': {
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email,
+                        'fullName': user.get_full_name() or user.username,
+                    }
+                }, status=status.HTTP_200_OK)
+
+            else:
+                return Response(
+                    {'error': 'Invalid username or password'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
 
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -171,14 +186,40 @@ class SignUpView(APIView):
         """
         try:
             name = request.data.get('name', '').strip()
-            username = request.data.get('username', '').strip()
+            login = request.data.get('login', '').strip()
             password = request.data.get('password', '').strip()
 
+            logger.info(f"SignUp attempt: name={name}, username={login}")
+
+
+            if not login:
+                logger.warning("Missing username")
+                return Response(
+                    {'error': 'Username are required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if not password:
+                logger.warning("Missing password")
+                return Response(
+                    {'error': 'Password are required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if User.objects.filter(username=login).exists():
+                logger.warning(f"User {login} already exists")
+                return Response(
+                    {'error': 'Username already exists'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             user = User.objects.create_user(
-                username=username,
+                username=login,
                 password=password,
                 first_name=name
             )
+
+            logger.info(f"User created: {user.id}")
             return Response(status=status.HTTP_200_OK)
 
         except Exception:
@@ -242,7 +283,7 @@ class CategoryListView(APIView):
         Returns:
             Response: JSON-массив с категориями и подкатегориями
         """
-        name = Category.object.all
+        name = Category.objects.all()
 
         categories_data = []
         for category in name:
@@ -250,8 +291,8 @@ class CategoryListView(APIView):
                 'id': category.id,
                 'title': category.title,
                 'image': {
-                    'src': category.image_src,
-                    'alt': category.image_alt,
+                    'src': category.src,
+                    'alt': category.alt,
                 },
                 'subcategories': []
             }
@@ -462,7 +503,7 @@ class PopularProductsView(APIView):
                 "title": product.title,
                 "price": float(product.price),
                 "category": product.category.id,
-                "freeDelivery": product.freeDelivery,
+                "freeDelivery": product.free_delivery,
                 "rating": float(product.rating),
                 "date": date_str,
                 "count": product.count,
@@ -571,7 +612,7 @@ class SalesView(APIView):
             product = sale.product
 
             item = {
-                "id": sale.product,
+                "id": sale.product.id,
                 "title": product.title,
                 "price": float(product.price),
                 "dateTo": sale.date_to.strftime('%m-%d'),
@@ -1257,29 +1298,42 @@ class ProfileView(APIView):
         serializer.is_valid(raise_exception=True)
 
         user = request.user
+
+        try:
+            profile = Profile.objects.get(user=user)
+        except Profile.DoesNotExist:
+            profile = Profile.objects.create(
+                user=user,
+                fullName=user.get_full_name() or user.username,
+                phone=''
+            )
+
         data = serializer.validated_data
 
         if 'fullName' in data:
-            user.fullName = data['fullName']
+            profile.fullName = data['fullName']
+
         if 'email' in data:
-            user.email = data['email']
+            request.user.email = data['email']
+            request.user.save()
+
         if 'phone' in data:
-            user.phone = data['phone']
+            profile.phone = data['phone']
 
         if 'avatar' in data:
             avatar_data = data['avatar']
             if 'src' in avatar_data:
-                user.avatar = avatar_data['src']
+                profile.avatar = avatar_data['src']
 
-        user.save()
+        profile.save()
 
         return Response({
-            "fullName": user.fullName,
-            "email": user.email,
-            "phone": user.phone,
+            "fullName": profile.fullName,
+            "email": request.user.email,
+            "phone": profile.phone,
             "avatar": {
-                "src": user.avatar.url if user.avatar else None,
-                "alt": user.get_full_name() or "Аватар пользователя"
+                "src": profile.avatar.src.url if profile.avatar and profile.avatar.src else None,
+                "alt": profile.avatar.alt if profile.avatar else "Аватар пользователя"
             }
         }, status=status.HTTP_200_OK)
 

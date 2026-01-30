@@ -38,7 +38,12 @@ class Profile(models.Model):
         on_delete=models.CASCADE,
         related_name="profile",
         verbose_name="Аватар",
+        blank=True,
+        null=True,
     )
+
+    def __str__(self):
+        return f"Профиль: {self.fullName} ({self.user.username})"
 
 
 class Category(models.Model):
@@ -70,7 +75,7 @@ class Product(models.Model):
         related_name='products',
         verbose_name="Категория"
     )
-    freeDelivery = models.BooleanField(
+    free_delivery = models.BooleanField(
         default=False, verbose_name="Бесплатная доставка"
     )
     rating = models.DecimalField(
@@ -291,7 +296,7 @@ class Order(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Заказ #{self.id} - {self.fullName} ({self.status})"
+        return f"Заказ #{self.id} - {self.full_name} ({self.status})"
 
     def save(self, *args, **kwargs):
         """Автоматически считаем сумму при сохранении"""
