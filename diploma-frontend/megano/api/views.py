@@ -1,5 +1,5 @@
 import logging
-
+import json
 import pytz
 
 from django.contrib.auth import authenticate, login, logout
@@ -185,9 +185,17 @@ class SignUpView(APIView):
             - 500 Internal Server Error при ошибке
         """
         try:
-            name = request.data.get('name', '').strip()
-            username = request.data.get('login', '').strip()
-            password = request.data.get('password', '').strip()
+            raw = list(request.data.keys())[0] if request.data else '{}'
+            try:
+                data = json.loads(raw)
+            except:
+                return Response({'error': 'Invalid JSON'}, status=400)
+
+            name = data.get('name', '').strip()
+            username = data.get('username', '').strip()
+            password = data.get('password', '').strip()
+
+            print(f"Используем: name='{name}', username='{username}'")
 
             logger.info(f"SignUp attempt: name={name}, username={username}")
 
