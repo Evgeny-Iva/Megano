@@ -186,13 +186,13 @@ class SignUpView(APIView):
         """
         try:
             name = request.data.get('name', '').strip()
-            login = request.data.get('login', '').strip()
+            username = request.data.get('login', '').strip()
             password = request.data.get('password', '').strip()
 
-            logger.info(f"SignUp attempt: name={name}, username={login}")
+            logger.info(f"SignUp attempt: name={name}, username={username}")
 
 
-            if not login:
+            if not username:
                 logger.warning("Missing username")
                 return Response(
                     {'error': 'Username are required'},
@@ -206,15 +206,15 @@ class SignUpView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            if User.objects.filter(username=login).exists():
-                logger.warning(f"User {login} already exists")
+            if User.objects.filter(username=username).exists():
+                logger.warning(f"User {username} already exists")
                 return Response(
                     {'error': 'Username already exists'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
             user = User.objects.create_user(
-                username=login,
+                username=username,
                 password=password,
                 first_name=name
             )

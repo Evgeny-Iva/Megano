@@ -4,10 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9ce353d5-3c07-49e8-893e-2d9e940ed4e2" name="Changes" comment="Написал для ордера сериалайзер, сервис, виюс, модель">
+    <list default="true" id="9ce353d5-3c07-49e8-893e-2d9e940ed4e2" name="Changes" comment="Urls">
+      <change afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/management/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/management/commands/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/management/commands/seed_db.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/SOURCES.txt" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/SOURCES.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/dependency_links.txt" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/dependency_links.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/top_level.txt" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/top_level.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/db.sqlite3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/megano/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/megano/settings.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,6 +47,7 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;Python.views.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;Order&quot;,
@@ -77,7 +86,119 @@
       <option name="project" value="LOCAL" />
       <updated>1768501901604</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Напсал get и post запрос для order">
+      <option name="closed" value="true" />
+      <created>1768503802356</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1768503802356</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Напсал get и post запрос для order">
+      <option name="closed" value="true" />
+      <created>1768504138270</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1768504138270</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Напсал get и post запрос для order">
+      <option name="closed" value="true" />
+      <created>1768504202805</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1768504202805</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Напсал Payment">
+      <option name="closed" value="true" />
+      <created>1768766859580</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1768766859580</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Написал Profile, ChangePassword, AvatarUpdate">
+      <option name="closed" value="true" />
+      <created>1768845526556</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1768845526556</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Написал Tags">
+      <option name="closed" value="true" />
+      <created>1768848451036</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1768848451036</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Написал ProductDetailView">
+      <option name="closed" value="true" />
+      <created>1769001237688</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1769001237688</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Написал CreateReviewView">
+      <option name="closed" value="true" />
+      <created>1769171255142</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1769171255142</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Исправил ошибки с базой данных">
+      <option name="closed" value="true" />
+      <created>1769172810617</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1769172810617</updated>
+    </task>
+    <task id="LOCAL-00012" summary="Исправил ошибки с базой данных">
+      <option name="closed" value="true" />
+      <created>1769172822604</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1769172822604</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Исправил ошибок в модели сереалайзере и виюсе">
+      <option name="closed" value="true" />
+      <created>1769772498378</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1769772498378</updated>
+    </task>
+    <task id="LOCAL-00014" summary="Исправил ошибоку в urls">
+      <option name="closed" value="true" />
+      <created>1769938088089</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1769938088089</updated>
+    </task>
+    <task id="LOCAL-00015" summary="Зависимости">
+      <option name="closed" value="true" />
+      <created>1769941268843</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1769941268843</updated>
+    </task>
+    <task id="LOCAL-00016" summary="Urls">
+      <option name="closed" value="true" />
+      <created>1769941419457</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1769941419457</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -107,6 +228,17 @@
     <MESSAGE value="Сделал Auth" />
     <MESSAGE value="Настройка мастера" />
     <MESSAGE value="Написал для ордера сериалайзер, сервис, виюс, модель" />
-    <option name="LAST_COMMIT_MESSAGE" value="Написал для ордера сериалайзер, сервис, виюс, модель" />
+    <MESSAGE value="Напсал get и post запрос для order" />
+    <MESSAGE value="Напсал Payment" />
+    <MESSAGE value="Написал Profile, ChangePassword, AvatarUpdate" />
+    <MESSAGE value="Написал Tags" />
+    <MESSAGE value="Написал ProductDetailView" />
+    <MESSAGE value="Написал CreateReviewView" />
+    <MESSAGE value="Исправил ошибки с базой данных" />
+    <MESSAGE value="Исправил ошибок в модели сереалайзере и виюсе" />
+    <MESSAGE value="Исправил ошибоку в urls" />
+    <MESSAGE value="Зависимости" />
+    <MESSAGE value="Urls" />
+    <option name="LAST_COMMIT_MESSAGE" value="Urls" />
   </component>
 </project>

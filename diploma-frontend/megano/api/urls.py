@@ -23,7 +23,8 @@ from .views import (
 
 urlpatterns = [
     path('sign-in/', SignInView.as_view(), name='sign-in'),
-    path('sign-up/', SignUpView.as_view(), name='sign-up'),
+    # path('sign-up/', SignUpView.as_view(), name='sign-up'),
+    path('sign-up', SignUpView.as_view(), name='sign-up'),
     path('sign-out/', SignOutView.as_view(), name='sign-out'),
     path('categories/', CategoryListView.as_view(), name='categories'),
     path('catalog/', CatalogView.as_view(), name='catalog'),
