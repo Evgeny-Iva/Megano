@@ -135,19 +135,43 @@ class SignInView(APIView):
             - 200 OK при успехе
             - 500 Internal Server Error при ошибке
         """
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '').strip()
+
         try:
-            username = request.data.get('username', '').strip()
-            password = request.data.get('password', '').strip()
+            if 'application/json' in request.content_type:
+                username = request.data.get('username', '').strip()
+                password = request.data.get('password', '').strip()
+
+            else:
+                username = request.POST.get('username', '').strip()
+                password = request.POST.get('password', '').strip()
+
+                if not username and not password:
+                    try:
+                        for key in request.POST.keys():
+                            data = json.loads(key)
+                            username = data.get('username', '').strip()
+                            password = data.get('password', '').strip()
+                            if username or password:
+                                break
+                    except:
+                        pass
+
+            print(f"DEBUG: Username='{username}', Password='{password}'")
 
             if not username or not password:
-                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response(  # ← ДОБАВЬТЕ return
+                    {'error': 'Username and password are required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
             user = authenticate(request, username=username, password=password)
 
             if user is not None:
-                token, created = Token.objects.get_or_create(user=user)
+                login(request, user)
+
                 return Response({
-                    'token': token.key,
                     'user': {
                         'id': user.id,
                         'username': user.username,
@@ -155,17 +179,18 @@ class SignInView(APIView):
                         'fullName': user.get_full_name() or user.username,
                     }
                 }, status=status.HTTP_200_OK)
-
             else:
                 return Response(
                     {'error': 'Invalid username or password'},
                     status=status.HTTP_401_UNAUTHORIZED
                 )
 
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        except Exception:
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            print(f"ERROR: {e}")
+            return Response(
+                {'error': 'Internal server error'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class SignUpView(APIView):
@@ -244,8 +269,19 @@ class SignOutView(APIView):
         Удаляет сессию пользователя.
         Всегда возвращает 200 OK.
         """
+
         logout(request)
-        return Response(status=status.HTTP_200_OK)
+
+        request.session.flush()
+
+        response = Response(
+            {'message': 'Logged out successfully'},
+            status=status.HTTP_200_OK
+        )
+
+        response.delete_cookie('sessionid')
+
+        return response
 
 
 class CategoryListView(APIView):
@@ -714,7 +750,7 @@ class BannersView(APIView):
                 "title": product.title,
                 "price": float(product.price),
                 "category": product.category.id,
-                "freeDelivery": product.freeDelivery,
+                "freeDelivery": product.free_delivery,
                 "rating": float(product.rating),
                 "date": date_str,
                 "count": product.count,

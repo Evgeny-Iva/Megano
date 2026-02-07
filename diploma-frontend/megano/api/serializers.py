@@ -47,7 +47,7 @@ class BasketResponseSerializer(serializers.Serializer):
     date = serializers.SerializerMethodField()
     title = serializers.CharField(source='product.title')
     description = serializers.CharField(source='product.description')
-    freeDelivery = serializers.BooleanField(source='product.freeDelivery')
+    free_delivery = serializers.BooleanField(source='product.freeDelivery')
     reviews = serializers.IntegerField(source='product.reviews')
     rating = serializers.FloatField(source='product.rating')
     images = serializers.SerializerMethodField()
