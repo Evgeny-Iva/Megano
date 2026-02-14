@@ -47,7 +47,7 @@ class BasketResponseSerializer(serializers.Serializer):
     date = serializers.SerializerMethodField()
     title = serializers.CharField(source='product.title')
     description = serializers.CharField(source='product.description')
-    freeDelivery = serializers.BooleanField(source='product.freeDelivery')
+    free_delivery = serializers.BooleanField(source='product.freeDelivery')
     reviews = serializers.IntegerField(source='product.reviews')
     rating = serializers.FloatField(source='product.rating')
     images = serializers.SerializerMethodField()
@@ -336,9 +336,9 @@ class ProfileSerializer(serializers.ModelSerializer):
     Поля: fullName, email, phone, avatar
     """
 
-    fullName = serializers.CharField(source='fullName')
-    email = serializers.EmailField(source='user.email')
-    phone = serializers.CharField(source='phone')
+    fullName = serializers.CharField(required=False, max_length=128)
+    email = serializers.EmailField(required=False, source='user.email')
+    phone = serializers.CharField(required=False, max_length=20)
     avatar = serializers.SerializerMethodField()
 
     def get_avatar(self, obj):
@@ -362,7 +362,6 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ['fullName', 'email', 'phone', 'avatar']
-        read_only_fields = fields
 
 
 class ChangePasswordSerializer(serializers.Serializer):
@@ -516,8 +515,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'category', 'price', 'count', 'date',
-            'title', 'description', 'fullDescription',
-            'freeDelivery', 'images', 'tags', 'reviews',
+            'title', 'description',
+            'free_delivery', 'images', 'tags', 'reviews',
             'specifications', 'rating'
         ]
 
