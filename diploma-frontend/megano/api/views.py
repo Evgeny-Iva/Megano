@@ -458,7 +458,7 @@ class CatalogView(APIView):
                 "title": product.title,
                 "price": float(product.price),
                 "category": product.category.id,
-                "freeDelivery": product.freeDelivery,
+                "freeDelivery": product.free_delivery,
                 "rating": float(product.rating),
                 "date": date_str,
                 "count": product.count,
