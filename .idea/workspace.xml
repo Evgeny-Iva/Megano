@@ -5,17 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9ce353d5-3c07-49e8-893e-2d9e940ed4e2" name="Changes" comment="Urls">
-      <change afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/management/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/management/commands/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/management/commands/seed_db.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/python_django_diploma.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/python_django_diploma.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/SOURCES.txt" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/SOURCES.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/dependency_links.txt" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/dependency_links.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/top_level.txt" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/top_level.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/megano/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/megano/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,19 +42,21 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.views.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;Order&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.views.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
-}</component>
+}]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-495700d161d3-aa17d162503b-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-243.22562.220" />
+        <option value="bundled-python-sdk-7bb8055f9097-cbfc7b97e6b2-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-252.28238.29" />
       </set>
     </attachedChunks>
   </component>
