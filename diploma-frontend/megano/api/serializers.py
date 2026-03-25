@@ -502,7 +502,6 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     specifications = SpecificationSerializer(
         many=True,
-        source='specifications',
         read_only=True
     )
 
