@@ -55,7 +55,7 @@ createApp({
 			location.assign(`/catalog/?filter=${this.searchText}`)
 		},
 		getCategories() {
-			this.getData('/api/categories')
+			this.getData('/api/categories/')
 				.then((data) => (this.categories = data))
 				.catch(() => {
 					console.warn('Ошибка получения категорий')
@@ -63,7 +63,7 @@ createApp({
 				})
 		},
 		getBasket() {
-			this.getData('/api/basket')
+			this.getData('/api/basket/')
 				.then((data) => {
 					const basket = {}
 					data.forEach((item) => {
@@ -95,7 +95,7 @@ createApp({
 		// },
 		addToBasket(item, count = 1) {
 			const { id } = item
-			this.postData('/api/basket', { id, count })
+			this.postData('/api/basket/', { id, count })
 				.then(({ data }) => {
 					this.basket = data
 				})
@@ -105,7 +105,7 @@ createApp({
 		},
 		removeFromBasket(id, count) {
 			axios
-				.delete('/api/basket', {
+				.delete('/api/basket/', {
 					data: JSON.stringify({ id, count }),
 					headers: {
 						'X-CSRFToken': this.getCookie('csrftoken'),
@@ -120,7 +120,7 @@ createApp({
 				})
 		},
 		signOut() {
-			this.postData('/api/sign-out').finally(() => {
+			this.postData('/api/sign-out/').finally(() => {
 				location.assign(`/`)
 			})
 		},
