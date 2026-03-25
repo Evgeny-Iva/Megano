@@ -4,15 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9ce353d5-3c07-49e8-893e-2d9e940ed4e2" name="Changes" comment="Urls">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/python_django_diploma.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/python_django_diploma.iml" afterDir="false" />
+    <list default="true" id="9ce353d5-3c07-49e8-893e-2d9e940ed4e2" name="Changes" comment="Баг фикс SingOut и SingIn">
+      <change afterPath="$PROJECT_DIR$/diploma-frontend/megano/megano/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/SOURCES.txt" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/SOURCES.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/dependency_links.txt" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/dependency_links.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/top_level.txt" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/diploma_frontend.egg-info/top_level.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/serializers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/api/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/api/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/megano/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/megano/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diploma-frontend/megano/megano/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/diploma-frontend/megano/megano/urls.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -197,7 +195,15 @@
       <option name="project" value="LOCAL" />
       <updated>1769941419457</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="Баг фикс SingOut и SingIn">
+      <option name="closed" value="true" />
+      <created>1770473722366</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1770473722366</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -211,7 +217,7 @@
                   <entry key="branch">
                     <value>
                       <list>
-                        <option value="auth" />
+                        <option value="Order" />
                       </list>
                     </value>
                   </entry>
@@ -238,6 +244,7 @@
     <MESSAGE value="Исправил ошибоку в urls" />
     <MESSAGE value="Зависимости" />
     <MESSAGE value="Urls" />
-    <option name="LAST_COMMIT_MESSAGE" value="Urls" />
+    <MESSAGE value="Баг фикс SingOut и SingIn" />
+    <option name="LAST_COMMIT_MESSAGE" value="Баг фикс SingOut и SingIn" />
   </component>
 </project>
