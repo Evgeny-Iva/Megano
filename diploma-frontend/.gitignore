@@ -1,1 +1,38 @@
+
+.DS_Store
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+/static/
+/static_collected/
+/media/
+/mediafiles/
+
+# IDE
 .idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Project specific
+debug.log
