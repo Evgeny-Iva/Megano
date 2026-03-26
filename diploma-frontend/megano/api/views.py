@@ -18,7 +18,7 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Basket, Category, Product, Sale, Order, Profile, Tag
+from .models import Basket, Category, Product, Sale, Order, Profile, Tag, OrderItem
 from .serializers import (
     AddToBasketSerializer,
     BasketResponseSerializer,
@@ -934,7 +934,7 @@ class BasketView(APIView):
             return Response({"error": "Product not in basket"}, status=status.HTTP_404_NOT_FOUND)
 
 
-class BasketDeleteView(APIView):
+class BasketDeleteView(APIView): #TODO обрати внимание!!!
     """
     API endpoint для удаления товаров из корзины.
 
@@ -1113,29 +1113,58 @@ class OrderCreateView(APIView):
     def post(self, request):
         """POST /api/orders/ - создать новый заказ"""
 
-        serializer = CreateOrderSerializer(
-            data=request.data,
-            context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
+        basket_items = Basket.objects.filter(user=request.user)
 
-        try:
-            order = OrderService.create_simple_order(
-                user=request.user,
-                data=serializer.validated_data
+        if not basket_items.exists():
+            return Response({'error': 'Корзина пуста'}, status=400)
+
+        profile = request.user.profile
+
+        delivery_type = request.POST.get('deliveryType', 'free') if hasattr(request, 'POST') else 'free'
+        payment_type = request.POST.get('paymentType', 'online') if hasattr(request, 'POST') else 'online'
+        city = request.POST.get('city', 'Не указан') #TODO переделать нормально
+        address = request.POST.get('address', 'Не указан')
+
+        order_data = {
+            'full_name': profile.fullName,
+            'email': request.user.email,
+            'phone': profile.phone,
+            'delivery_type': delivery_type,
+            'payment_type': payment_type,
+            'city': city,
+            'address': address,
+        }
+
+        serialize = CreateOrderSerializer(data=order_data)
+        serialize.is_valid(raise_exception=True)
+
+        order = Order.objects.create(
+            user=request.user,
+            full_name=serialize.validated_data['full_name'],
+            email=serialize.validated_data['email'],
+            phone=serialize.validated_data['phone'],
+            delivery_type=serialize.validated_data['delivery_type'],
+            payment_type=serialize.validated_data['payment_type'],
+            city=serialize.validated_data['city'],
+            address=serialize.validated_data['address'],
+            total_cost=sum(item.product.price * item.quantity for item in basket_items)
+        )
+
+        for basket in basket_items:
+            OrderItem.objects.create(
+                order=order,
+                product=basket.product,
+                quantity=basket.quantity,
+                price=basket.product.price
             )
-        except ValidationError as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+
+        basket_items.delete()
 
         return Response({
             'orderId': order.id,
-            'totalCost': str(order.totalCost),
-            'deliveryPrice': str(order.deliveryPrice),
+            'totalCost': str(order.total_cost),
             'status': order.status
-        }, status=status.HTTP_200_OK)
+        })
 
 
 class OrderDetailView(APIView):

@@ -216,8 +216,8 @@ class CreateOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            'fullName', 'email', 'phone',
-            'deliveryType', 'paymentType',
+            'full_name', 'email', 'phone',
+            'delivery_type', 'payment_type',
             'city', 'address'
         ]
 
