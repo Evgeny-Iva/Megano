@@ -861,11 +861,7 @@ class BasketView(APIView):
         total_count = basket_items.aggregate(total=Sum('quantity'))['total'] or 0
         total_price = sum(item.total_price for item in basket_items)
 
-        return Response({
-            "items": serializer.data,
-            "totalCount": total_count,
-            "totalPrice": float(total_price)
-        })
+        return Response(serializer.data)
 
     def post(self, request):
         """
@@ -902,10 +898,40 @@ class BasketView(APIView):
             basket_item.quantity += count
             basket_item.save()
 
-        return Response(
-            {"id": product.id, "count": basket_item.quantity},
-            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
-        )
+        baskets = Basket.objects.filter(user=request.user) \
+            .select_related('product', 'product__category') \
+            .prefetch_related('product__images', 'product__tags')
+
+        serializer = BasketResponseSerializer(baskets, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request):
+        """Удаление товара из корзины"""
+        try:
+            data = json.loads(request.body)
+            product_id = data.get('id')
+            count = data.get('count', None)
+        except Exception as e:
+            return Response({"error": f"Invalid data: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            basket_item = Basket.objects.get(user=request.user, product_id=product_id)
+
+            if count is None or  count >= basket_item.quantity:
+                basket_item.delete()
+            else:
+                basket_item.quantity -= count
+                basket_item.save()
+
+            basket = Basket.objects.filter(user=request.user) \
+                .select_related('product', 'product__category') \
+                .prefetch_related('product__images', 'product__tags')
+
+            serializer = BasketResponseSerializer(basket, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Basket.DoesNotExist:
+            return Response({"error": "Product not in basket"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class BasketDeleteView(APIView):
