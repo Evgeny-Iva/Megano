@@ -119,7 +119,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
     """Сериализатор для товара в заказе (вложенный)"""
     id = serializers.IntegerField(source='product.id')
     category = serializers.IntegerField(source='product.category.id')
-    price = serializers.DecimalField(source='price', max_digits=10, decimal_places=2)
+    price = serializers.DecimalField(max_digits=10, decimal_places=2)
     count = serializers.IntegerField(source='quantity')
     date = serializers.SerializerMethodField()
     title = serializers.CharField(source='product.title')
@@ -166,6 +166,11 @@ class OrderSerializer(serializers.ModelSerializer):
         format='%Y-%m-%d %H:%M',
         read_only=True
     )
+
+    fullName = serializers.CharField(source='full_name', read_only=True)
+    deliveryType = serializers.CharField(source='delivery_type', read_only=True)
+    paymentType = serializers.CharField(source='payment_type', read_only=True)
+    totalCost = serializers.DecimalField(source='total_cost', max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = Order

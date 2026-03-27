@@ -38,7 +38,7 @@ urlpatterns = [
     path('profile/avatar/', AvatarUpdateView.as_view(), name='avatar-update'),
     path('products/popular/', PopularProductsView.as_view(), name='popular-products'),
     path('cart/<int:id>/', BasketDeleteView.as_view(), name='cart-item-delete'),
-    path('orders/<int:id>/', OrderDetailView.as_view(), name='order-detail'),
+    path('order/<int:id>/', OrderDetailView.as_view(), name='order-detail'),
     path('product/<int:id>/', ProductDetailView.as_view(), name='product-detail'),
     path('product/<int:id>/review/', CreateReviewView.as_view(), name='product-review'),
 ]
