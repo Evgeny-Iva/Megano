@@ -16,7 +16,7 @@ var mix = {
                 return
             }
 
-            this.postData('/api/profile', {
+            this.postData('/api/profile/', {
                 fullName: this.fullName,
                 avatar: this.avatar,
                 phone: this.phone,
@@ -60,7 +60,7 @@ var mix = {
             const formData = new FormData()
             formData.append('avatar', file)
 
-            this.postData('/api/profile/avatar', formData, {'Content-Type': 'multipart/form-data'})
+            this.postData('/api/profile/avatar/', formData, {'Content-Type': 'multipart/form-data'})
             .then(() => {
                 this.getProfile()
             }).catch(() => {

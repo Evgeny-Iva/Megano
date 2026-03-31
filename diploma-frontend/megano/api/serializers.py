@@ -244,6 +244,9 @@ class PaymentSerializer(serializers.ModelSerializer):
     year = serializers.CharField(max_length=4)
     code = serializers.CharField(max_length=4)
 
+    class Meta:
+        pass
+
     def validate_number(self, value):
         """Валидация номера карты"""
         cleaned = value.replace(" ", "").replace("-", "")

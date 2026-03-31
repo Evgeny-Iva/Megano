@@ -52,7 +52,7 @@ var mix = {
             if (max !== 50000) {
                 this.filter.maxPrice = max
             }
-            this.getData("/api/catalog", {
+            this.getData("/api/catalog/", {
                 filter: {
                     ...this.filter,
                     minPrice: min,

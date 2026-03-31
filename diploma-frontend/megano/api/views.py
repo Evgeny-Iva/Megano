@@ -17,6 +17,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from datetime import datetime
 
 from .models import Basket, Category, Product, Sale, Order, Profile, Tag, OrderItem
 from .serializers import (
@@ -1300,56 +1301,64 @@ class PaymentView(APIView):
 
         try:
             order = Order.objects.get(id=id, user=request.user)
+
+            data = request.data
+            errors = {}
+
+            number = data.get('number', data.get('number1', ''))
+            cleaned_number = number.replace(' ', '').replace('-', '')
+
+            if not cleaned_number.isdigit() or len(number) != 16:
+                errors['number'] = 'Номер карты должен содержать 16 цифр'
+
+            name = data.get('name', '')
+            if len(name.strip()) < 3:
+                errors['name'] = 'Введите имя владельца карты'
+
+            month = data.get('month', '')
+            if not month.isdigit() or int(month) < 1 or int(month) > 12:
+                errors['month'] = 'Месяц должен быть от 01 до 12'
+
+            year = data.get('year', '')
+            if not year.isdigit() or len(year) != 2:
+                errors['year'] = 'Год должен содержать 2 цифры'
+            else:
+                current_year = datetime.now().year
+                print(f"Current year: {current_year}")
+
+                if len(year) == 2:
+                    year_num = 2000 + int(year)
+                else:
+                    year_num = int(year)
+
+                print(f"Card year: {year_num}")
+
+                if year_num < current_year:
+                    errors['year'] = 'Срок действия карты истек'
+                else:
+                    print("Year validation passed")
+
+            code = data.get('code', '')
+            if not code.isdigit() or len(code) != 3:
+                errors['code'] = 'CVV код должен содержать 3 цифры'
+
+            if errors:
+                return Response(errors, status=400)
+
+            order.status = 'paid'
+            order.save()
+
+            return Response({
+                'success': True,
+                'orderId': order.id,
+                'status': order.status
+            })
+
         except Order.DoesNotExist:
             return Response(
                 {"error": "Заказ не найден"},
                 status=status.HTTP_404_NOT_FOUND
             )
-
-        serializer = PaymentSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        if order.status == 'paid':
-            return Response(
-                {"error": "Заказ уже оплачен"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if order.status not in ['accepted', 'confirmed']:
-            return Response(
-                {"error": f"Невозможно оплатить заказ в статусе '{order.status}'"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            with transaction.atomic():
-
-                card_data = serializer.validated_data
-
-                if card_data['number'] == '4111111111111111':
-                    order.status = 'paid'
-                    order.save()
-                else:
-                    raise ValidationError("Карта отклонена банком")
-
-        except ValidationError as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        except Exception as e:
-            logger.error(f"Ошибка оплаты заказа {id}: {str(e)}")
-            return Response(
-                {"error": "Произошла ошибка при обработке оплаты"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-        return Response({
-            "success": True,
-            "orderId": order.id,
-            "message": "Оплата успешно проведена"
-        }, status=status.HTTP_200_OK)
 
 
 class ProfileView(APIView):
