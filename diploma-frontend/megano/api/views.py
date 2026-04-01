@@ -935,7 +935,7 @@ class BasketView(APIView):
             return Response({"error": "Product not in basket"}, status=status.HTTP_404_NOT_FOUND)
 
 
-class BasketDeleteView(APIView): #TODO обрати внимание!!!
+class BasketDeleteView(APIView):
     """
     API endpoint для удаления товаров из корзины.
 
@@ -962,7 +962,7 @@ class BasketDeleteView(APIView): #TODO обрати внимание!!!
 
     permission_classes = [permissions.IsAuthenticated]
 
-    def delete(self, request, id=None):
+    def delete(self, request, product_id=None):
         """
         DELETE /api/basket/ или /api/basket/{id}/ - Удалить товар(ы) из корзины.
 
@@ -980,8 +980,8 @@ class BasketDeleteView(APIView): #TODO обрати внимание!!!
             Http404: Если товар не найден в корзине (при удалении по id).
         """
 
-        if id is None:
-            deleted_count, _ = Basket.objects.filter(user=request.user).delete()
+        if product_id is None:
+            deleted_count = Basket.objects.filter(user=request.user).delete()[0]
             return Response(
                 {"deleted": deleted_count},
                 status=status.HTTP_204_NO_CONTENT
@@ -1656,3 +1656,43 @@ class CreateReviewView(APIView):
             },
             status=status.HTTP_201_CREATED
         )
+
+
+class LimitedProductsView(APIView):
+    """
+    API endpoint для получения ограниченного количества товаров.
+
+    Пример запроса:
+        GET /api/products/limited/
+
+    Возвращает первые 8 товаров (или сколько нужно).
+    """
+
+    def get(self, request):
+        # Получаем первые 8 товаров
+        products = Product.objects.all()[:8]
+
+        # Формируем ответ (аналогично CatalogView)
+        items = []
+        for product in products:
+            date_str = format(
+                product.date.astimezone(pytz.timezone('Europe/Moscow')),
+                'D M d Y H:i:s O'
+            )
+            item = {
+                "id": product.id,
+                "title": product.title,
+                "price": float(product.price),
+                "category": product.category.id,
+                "freeDelivery": product.free_delivery,
+                "rating": float(product.rating),
+                "date": date_str,
+                "count": product.count,
+                "description": product.description,
+                "reviews": product.reviews,
+                "tags": [{"id": t.id, "name": t.name} for t in product.tags.all()],
+                "images": [{"src": i.src, "alt": i.alt} for i in product.images.all()]
+            }
+            items.append(item)
+
+        return Response(items)
