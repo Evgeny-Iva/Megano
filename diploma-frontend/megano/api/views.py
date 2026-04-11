@@ -1399,11 +1399,17 @@ class ProfileView(APIView):
 
     def post(self, request):
         """POST /api/profile/ - обновить профиль"""
+        print("=== PROFILE UPDATE ===")
+        print("Request data:", request.data)
         serializer = ProfileSerializer(
             data=request.data,
             context={'request': request}
         )
+        print("Before validation, data:", serializer.initial_data)
+
         serializer.is_valid(raise_exception=True)
+
+        print("Validated data:", serializer.validated_data)
 
         user = request.user
 
@@ -1421,8 +1427,8 @@ class ProfileView(APIView):
         if 'fullName' in data:
             profile.fullName = data['fullName']
 
-        if 'email' in data:
-            request.user.email = data['email']
+        if 'user' in data and 'email' in data['user']:
+            request.user.email = data['user']['email']
             request.user.save()
 
         if 'phone' in data:
@@ -1480,10 +1486,15 @@ class ChangePasswordView(APIView):
         )
 
         if not serializer.is_valid():
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            error = {}
+            for field, error_list in serializer.errors.items():
+                if field == 'currentPassword':
+                    error['currentPassword'] = error_list
+                elif field == 'newPassword':
+                    error['newPassword'] = error_list
+                else:
+                    error[field] = error_list
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
         serializer.save()
 
@@ -1523,8 +1534,10 @@ class AvatarUpdateView(APIView):
             'message': 'Файл не был передан в запросе'
         }, status=status.HTTP_400_BAD_REQUEST)
 
+        profile = Profile.objects.get(user=user)
+
         serializer = AvatarUpdateSerializer(
-            instance=user,
+            instance=profile,
             data=request.data,
             context={'request': request}
         )
@@ -1631,31 +1644,38 @@ class CreateReviewView(APIView):
             request: Объект запроса с данными отзыва
             id: Идентификатор товара
         """
-        get_object_or_404(Product, id=id)
+        try:
+            product = get_object_or_404(Product, id=id)
 
-        serializer = CreateReviewSerializer(
-            data=request.data,
-            context={
-                'request': request,
-                'product_id': id
-            }
-        )
-
-        if not serializer.is_valid():
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
+            serializer = CreateReviewSerializer(
+                data=request.data,
+                context={
+                    'request': request,
+                    'product_id': id
+                }
             )
 
-        review = serializer.save()
+            if not serializer.is_valid():
+                print(f"Serializer errors: {serializer.errors}")
+                return Response(
+                    serializer.errors,
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-        return Response(
-            {
-                'id': review.id,
-                'message': 'Отзыв успешно добавлен'
-            },
-            status=status.HTTP_201_CREATED
-        )
+            review = serializer.save()
+
+            return Response(
+                {
+                    'id': review.id,
+                    'message': 'Отзыв успешно добавлен'
+                },
+                status=status.HTTP_201_CREATED
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class LimitedProductsView(APIView):

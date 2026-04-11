@@ -1,7 +1,7 @@
 import pytz
 import os
 from rest_framework import serializers
-from .models import Basket, Product, Order, OrderItem, Profile, User, Tag, ProductImage, Specification, Review
+from .models import Basket, Product, Order, OrderItem, Profile, User, Tag, ProductImage, Specification, Review, Avatar
 from datetime import datetime
 from django.utils.dateformat import format
 from django.db.models import Avg
@@ -376,17 +376,15 @@ class ChangePasswordSerializer(serializers.Serializer):
     """
     Сериализатор для изменения пароля пользователя.
     """
-    current_password = serializers.CharField(
+    currentPassword = serializers.CharField(
         write_only=True,
         required=True,
-        source='currentPassword'
     )
 
-    new_password = serializers.CharField(
+    newPassword = serializers.CharField(
         write_only=True,
         required=True,
         validators=[validate_password],
-        source='newPassword'
     )
 
     def validate(self, attrs):
@@ -395,10 +393,10 @@ class ChangePasswordSerializer(serializers.Serializer):
         """
         user = self.context['request'].user
 
-        if not user.check_password(attrs['current_password']):
+        if not user.check_password(attrs['currentPassword']):
             raise serializers.ValidationError({"currentPassword": "Текущий пароль неверен"})
 
-        if attrs['current_password'] == attrs['new_password']:
+        if attrs['currentPassword'] == attrs['newPassword']:
             raise serializers.ValidationError({"newPassword": "Новый пароль должен отличаться от текущего"})
 
         return attrs
@@ -454,9 +452,16 @@ class AvatarUpdateSerializer(serializers.Serializer):
         """
         Обновление аватара пользователя.
         """
-        avatar_file = validated_data.get('avatar')
-        instance.avatar = avatar_file
+        avatar_file = validated_data['avatar']
+
+        avatar = Avatar.objects.create(
+            src=avatar_file,
+            alt="Аватар пользователя"
+        )
+
+        instance.avatar = avatar
         instance.save()
+
         return instance
 
 

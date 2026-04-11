@@ -34,6 +34,7 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += [
         path('smartphones.png', serve, {'document_root': os.path.join(settings.BASE_DIR, 'static', 'images', 'categories'), 'path': 'smartphones.png'}),
         path('shoes.png', serve, {'document_root': os.path.join(settings.BASE_DIR, 'static', 'images', 'categories'), 'path': 'shoes.png'}),

@@ -42,7 +42,7 @@ var mix = {
                 return
             }
             console.log({ currentPassword: this.passwordCurrent, newPassword: this.password })
-            this.postData('/api/profile/password', { currentPassword: this.passwordCurrent, newPassword: this.password })
+            this.postData('/api/profile/password/', { currentPassword: this.passwordCurrent, newPassword: this.password })
               .then(({data}) => {
                    alert('Успешно сохранено')
                     this.passwordCurrent = ''
