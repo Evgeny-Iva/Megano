@@ -418,14 +418,33 @@ class CatalogView(APIView):
         products = Product.objects.all()
 
         category_id = request.GET.get('category')
-        search = request.GET.get('filter', '').strip()
         sort_type = request.GET.get('sortType', 'dec')
+
+        filters = {
+            'min_price': request.GET.get('filter[minPrice]'),
+            'max_price': request.GET.get('filter[maxPrice]'),
+            'free_delivery': request.GET.get('filter[freeDelivery]'),
+            'available': request.GET.get('filter[available]'),
+            'search': request.GET.get('filter[name]', '').strip(),
+        }
+
+        if filters['min_price']:
+            products = products.filter(price__gte=filters['min_price'])
+
+        if filters['max_price']:
+            products = products.filter(price__lte=filters['max_price'])
+
+        if filters['free_delivery'] == 'true':
+            products = products.filter(free_delivery=True)
+
+        if filters['available'] == 'true':
+            products = products.filter(count__gt=0)
+
+        if filters['search']:
+            products = products.filter(title__icontains=filters['search'])
 
         if category_id:
             products = products.filter(category_id=category_id)
-
-        if search:
-            products = products.filter(title__icontains=search)
 
         if sort_type == 'inc':
             products = products.order_by('price')
