@@ -141,3 +141,6 @@ python manage.py runserver
 
 ## Ссылка на проект
 [https://github.com/Evgeny-Iva/Megano](https://github.com/Evgeny-Iva/Megano)
+
+## Автор
+Евгений Иванов — [GitHub](https://github.com/Evgeny-Iva)
