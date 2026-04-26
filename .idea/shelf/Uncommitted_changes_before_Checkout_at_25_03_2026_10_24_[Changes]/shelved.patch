@@ -1,0 +1,15 @@
+Index: diploma-frontend/megano/.gitignore
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+># Python\r\n__pycache__/\r\n*.py[cod]\r\n*.so\r\n.Python\r\n\r\n# Django\r\n*.log\r\nstatic/\r\nstatic_collected/\r\nmedia/\r\n\r\n# IDE\r\n.idea/\r\n.vscode/\r\n\r\n# OS\r\n.DS_Store\r\nThumbs.db
+===================================================================
+diff --git a/diploma-frontend/megano/.gitignore b/diploma-frontend/megano/.gitignore
+--- a/diploma-frontend/megano/.gitignore	(revision 4be7174d0b585857dcce70817f195736ac30090f)
++++ b/diploma-frontend/megano/.gitignore	(date 1774416192997)
+@@ -16,4 +16,4 @@
+ 
+ # OS
+ .DS_Store
+-Thumbs.db
+\ No newline at end of file
++Thumbs.db.idea/

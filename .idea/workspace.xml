@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="e66b10da-047e-4fb5-9a01-06c2302de5a8" name="Changes" comment="Добавил докер" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="master" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Evgeny-Iva&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Evgeny-Iva/Megano.git&quot;,
+    &quot;accountId&quot;: &quot;e5e5602d-d4f5-44c7-b695-c487f799406b&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 6
+}</component>
+  <component name="ProjectId" id="3CZ5R5XkEJ50xNlL4KNNVyWSVxv" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/user/PycharmProjects/python_django_diploma/diploma-frontend&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\user\PycharmProjects\python_django_diploma\diploma-frontend" />
+      <recent name="C:\Users\user\PycharmProjects\python_django_diploma\diploma-frontend\megano\media\avatars" />
+      <recent name="C:\Users\user\PycharmProjects\python_django_diploma\diploma-frontend\megano\static\images" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\user\PycharmProjects\python_django_diploma" />
+      <recent name="C:\Users\user\PycharmProjects\python_django_diploma\diploma-frontend\megano" />
+      <recent name="C:\Users\user\PycharmProjects\python_django_diploma\diploma-frontend" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-495700d161d3-aa17d162503b-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-243.22562.220" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task id="LOCAL-00001" summary="Исправил ошибки в Профиле, Замене пароля, обновления аватара, Создания отзыва">
+      <option name="closed" value="true" />
+      <created>1775915278955</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1775915278955</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Исправил фильтр">
+      <option name="closed" value="true" />
+      <created>1776511967561</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1776511967561</updated>
+    </task>
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="e66b10da-047e-4fb5-9a01-06c2302de5a8" name="Changes" comment="Исправил фильтр" />
+      <created>1776580241629</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1776580241629</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Добавил README.md">
+      <option name="closed" value="true" />
+      <created>1776580646711</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1776580646711</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Гит игнор">
+      <option name="closed" value="true" />
+      <created>1776580774267</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1776580774267</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Гит">
+      <option name="closed" value="true" />
+      <created>1776581349059</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1776581349059</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Гит">
+      <option name="closed" value="true" />
+      <created>1776581591242</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1776581591242</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Гит">
+      <option name="closed" value="true" />
+      <created>1776582736522</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1776582736522</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Гит">
+      <option name="closed" value="true" />
+      <created>1776583792601</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1776583792601</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Добавил докер">
+      <option name="closed" value="true" />
+      <created>1776593782702</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1776593782702</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="RECENT_FILTERS">
+      <map>
+        <entry key="Branch">
+          <value>
+            <list>
+              <RecentGroup>
+                <option name="FILTER_VALUES">
+                  <option value="HEAD" />
+                </option>
+              </RecentGroup>
+              <RecentGroup>
+                <option name="FILTER_VALUES">
+                  <option value="origin/master" />
+                </option>
+              </RecentGroup>
+              <RecentGroup>
+                <option name="FILTER_VALUES">
+                  <option value="master" />
+                </option>
+              </RecentGroup>
+            </list>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Баг фикс SingOut и SingIn" />
+    <MESSAGE value="Исправил ошибки в Профиле, Замене пароля, обновления аватара, Создания отзыва" />
+    <MESSAGE value="Исправил фильтр" />
+    <MESSAGE value="Добавил README.md" />
+    <MESSAGE value="Гит игнор" />
+    <MESSAGE value="Гит" />
+    <MESSAGE value="Добавил докер" />
+    <option name="LAST_COMMIT_MESSAGE" value="Добавил докер" />
+  </component>
+</project>
