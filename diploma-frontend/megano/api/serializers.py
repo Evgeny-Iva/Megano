@@ -284,7 +284,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             )
 
         month_num = int(value)
-        if 0 < month_num < 13:
+        if month_num < 1 or month_num > 12:
             raise serializers.ValidationError(
                 "Месяц должен содержать цифр от 1 до 12 включительно"
             )
@@ -414,7 +414,7 @@ class ChangePasswordSerializer(serializers.Serializer):
         Сохранение нового пароля.
         """
         user = self.context['request'].user
-        new_password = self.validated_data['new_password']
+        new_password = self.validated_data['newPassword']
 
         user.set_password(new_password)
         user.save()

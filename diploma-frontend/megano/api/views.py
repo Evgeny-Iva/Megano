@@ -35,6 +35,7 @@ from .serializers import (
     CreateReviewSerializer,
 )
 from .services.order_service import OrderService
+from .services.auth_service import AuthService
 
 
 logger = logging.getLogger(__name__)
@@ -140,60 +141,22 @@ class SignInView(APIView):
         username = request.POST.get('username', '').strip()
         password = request.POST.get('password', '').strip()
 
-        try:
-            if 'application/json' in request.content_type:
-                username = request.data.get('username', '').strip()
-                password = request.data.get('password', '').strip()
-
-            else:
-                username = request.POST.get('username', '').strip()
-                password = request.POST.get('password', '').strip()
-
-                if not username and not password:
-                    try:
-                        for key in request.POST.keys():
-                            data = json.loads(key)
-                            username = data.get('username', '').strip()
-                            password = data.get('password', '').strip()
-                            if username or password:
-                                break
-                    except:
-                        pass
-
-            print(f"DEBUG: Username='{username}', Password='{password}'")
-
-            if not username or not password:
-                return Response(  # ← ДОБАВЬТЕ return
-                    {'error': 'Username and password are required'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            user = authenticate(request, username=username, password=password)
-
-            if user is not None:
-                login(request, user)
-
-                return Response({
-                    'user': {
-                        'id': user.id,
-                        'username': user.username,
-                        'email': user.email,
-                        'fullName': user.get_full_name() or user.username,
-                    }
-                }, status=status.HTTP_200_OK)
-            else:
-                return Response(
-                    {'error': 'Invalid username or password'},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-
-        except Exception as e:
-            print(f"ERROR: {e}")
+        if not username or not password:
             return Response(
-                {'error': 'Internal server error'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {'error': 'Username and password are required'},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
+        user = AuthService.authenticate_user(request, username, password)
+
+        if user is not None:
+            AuthService.login_user(request, user)
+            return Response(AuthService.build_user_response(user))
+
+        return Response(
+            {'error': 'Invalid username or password'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
 
 class SignUpView(APIView):
     """View для регистрации нового пользователя."""
