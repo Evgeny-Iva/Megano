@@ -298,12 +298,6 @@ class Order(models.Model):
     def __str__(self):
         return f"Заказ #{self.id} - {self.full_name} ({self.status})"
 
-    def save(self, *args, **kwargs):
-        """Автоматически считаем сумму при сохранении"""
-        if not self.total_cost and hasattr(self, 'items'):
-            self.total_cost = sum(item.total_price for item in self.items.all())
-        super().save(*args, **kwargs)
-
 
 class OrderItem(models.Model):
     """Товар в заказе (связь Order-Product с количеством и фиксированной ценой)."""

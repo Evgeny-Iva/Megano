@@ -20,7 +20,7 @@ from rest_framework.views import APIView
 from datetime import datetime
 
 from .models import Basket, Category, Product, Sale, Order, Profile, Tag, OrderItem
-from utils import format_datetime
+from .utils import format_datetime
 from .serializers import (
     AddToBasketSerializer,
     BasketResponseSerializer,
@@ -138,8 +138,14 @@ class SignInView(APIView):
             - 200 OK при успехе
             - 500 Internal Server Error при ошибке
         """
-        username = request.POST.get('username', '').strip()
-        password = request.POST.get('password', '').strip()
+
+        try:
+            data = json.loads(request.body)
+            username = data.get('username', '').strip()
+            password = data.get('password', '').strip()
+        except:
+            username = request.POST.get('username', '').strip()
+            password = request.POST.get('password', '').strip()
 
         if not username or not password:
             return Response(
@@ -157,6 +163,7 @@ class SignInView(APIView):
             {'error': 'Invalid username or password'},
             status=status.HTTP_401_UNAUTHORIZED
         )
+
 
 class SignUpView(APIView):
     """View для регистрации нового пользователя."""
@@ -1113,27 +1120,10 @@ class OrderCreateView(APIView):
         serialize = CreateOrderSerializer(data=order_data)
         serialize.is_valid(raise_exception=True)
 
-        order = Order.objects.create(
+        order = OrderService.create_simple_order(
             user=request.user,
-            full_name=serialize.validated_data['full_name'],
-            email=serialize.validated_data['email'],
-            phone=serialize.validated_data['phone'],
-            delivery_type=serialize.validated_data['delivery_type'],
-            payment_type=serialize.validated_data['payment_type'],
-            city=serialize.validated_data['city'],
-            address=serialize.validated_data['address'],
-            total_cost=sum(item.product.price * item.quantity for item in basket_items)
+            data=serialize.validated_data
         )
-
-        for basket in basket_items:
-            OrderItem.objects.create(
-                order=order,
-                product=basket.product,
-                quantity=basket.quantity,
-                price=basket.product.price
-            )
-
-        basket_items.delete()
 
         return Response({
             'orderId': order.id,

@@ -9,7 +9,7 @@ from django.db.models import Avg
 from rest_framework import serializers
 from datetime import datetime
 
-from utils import format_datetime
+from .utils import format_datetime
 from .models import (
     Basket,
     Product,

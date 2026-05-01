@@ -65,13 +65,12 @@ class OrderService:
             items_total += item.product.price * item.quantity
 
         delivery_price = 0
-        if data.get('deliveryType') == 'ordinary':
+        if data.get('delivery_type') == 'ordinary':
             delivery_price = 200 if items_total < 2000 else 0
-        elif data.get('deliveryType') == 'express':
+        elif data.get('delivery_type') == 'express':
             delivery_price = 500
 
-        order.totalCost = items_total + delivery_price
-        order.deliveryPrice = delivery_price
+        order.total_cost = items_total + delivery_price
         order.status = 'accepted'
         order.save()
 
