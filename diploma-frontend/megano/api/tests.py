@@ -20,23 +20,6 @@ class CatalogTest(TestCase):
             category=self.category
         )
 
-
-class CatalogTest(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-        self.user = User.objects.create_user(username='testuser', password='12345')
-        self.category = Category.objects.create(
-            title='Test Category',
-            src='/static/test.jpg',
-            alt='Test'
-        )
-        self.product = Product.objects.create(
-            title='Test Phone',
-            price=9999,
-            count=10,
-            category=self.category
-        )
-
     def test_catalog_page(self):
         """GET /api/catalog/ возвращает 200"""
         response = self.client.get('/api/catalog/')
