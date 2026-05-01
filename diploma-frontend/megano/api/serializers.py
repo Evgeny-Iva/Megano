@@ -1,12 +1,28 @@
 import pytz
 import os
-from rest_framework import serializers
-from .models import Basket, Product, Order, OrderItem, Profile, User, Tag, ProductImage, Specification, Review, Avatar
-from datetime import datetime
-from django.utils.dateformat import format
-from django.db.models import Avg
+
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import get_user_model
+from django.utils.dateformat import format
+from django.db.models import Avg
+
+from rest_framework import serializers
+from datetime import datetime
+
+from utils import format_datetime
+from .models import (
+    Basket,
+    Product,
+    Order,
+    OrderItem,
+    Profile,
+    User,
+    Tag,
+    ProductImage,
+    Specification,
+    Review,
+    Avatar
+)
 
 User = get_user_model()
 
@@ -54,11 +70,7 @@ class BasketResponseSerializer(serializers.Serializer):
     tags = serializers.SerializerMethodField()
 
     def get_date(self, obj):
-        date_obj = obj.product.date
-        return format(
-            date_obj.astimezone(pytz.timezone('Europe/Moscow')),
-            'D M d Y H:i:s O'
-        )
+        return format_datetime(obj.product.date)
 
     def get_images(self, obj):
         first_image = obj.product.images.first()
@@ -131,11 +143,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
     rating = serializers.FloatField(source='product.rating')
 
     def get_date(self, obj):
-        date_obj = obj.product.date
-        return format(
-            date_obj.astimezone(pytz.timezone('Europe/Moscow')),
-            'D M d Y H:i:s O'
-        )
+        return format_datetime(obj.product.date)
 
     def get_images(self, obj):
         first_image = obj.product.images.first()

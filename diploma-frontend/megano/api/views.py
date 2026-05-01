@@ -20,6 +20,7 @@ from rest_framework.views import APIView
 from datetime import datetime
 
 from .models import Basket, Category, Product, Sale, Order, Profile, Tag, OrderItem
+from utils import format_datetime
 from .serializers import (
     AddToBasketSerializer,
     BasketResponseSerializer,
@@ -469,10 +470,7 @@ class CatalogView(APIView):
 
         items = []
         for product in products:
-            date_str = format(
-                product.date.astimezone(pytz.timezone('Europe/Moscow')),
-                'D M d Y H:i:s O'
-            )
+            date_str = format_datetime(product.date)
             item = {
                 "id": product.id,
                 "title": product.title,
@@ -558,10 +556,7 @@ class PopularProductsView(APIView):
 
         items = []
         for product in popular_products:
-            date_str = format(
-                product.date.astimezone(pytz.timezone('Europe/Moscow')),
-                'D M d Y H:i:s O'
-            )
+            date_str = format_datetime(product.date)
             item = {
                 "id": product.id,
                 "title": product.title,
@@ -761,10 +756,7 @@ class BannersView(APIView):
 
         banners_data = []
         for product in banner_products:
-            date_str = format(
-                product.date.astimezone(pytz.timezone('Europe/Moscow')),
-                'D M d Y H:i:s O'
-            )
+            date_str = format_datetime(product.date)
             banner = {
                 "id": product.id,
                 "title": product.title,
@@ -1142,7 +1134,7 @@ class OrderCreateView(APIView):
 
         delivery_type = request.POST.get('deliveryType', 'free') if hasattr(request, 'POST') else 'free'
         payment_type = request.POST.get('paymentType', 'online') if hasattr(request, 'POST') else 'online'
-        city = request.POST.get('city', 'Не указан') #TODO переделать нормально
+        city = request.POST.get('city', 'Не указан')
         address = request.POST.get('address', 'Не указан')
 
         order_data = {
@@ -1714,10 +1706,7 @@ class LimitedProductsView(APIView):
         # Формируем ответ (аналогично CatalogView)
         items = []
         for product in products:
-            date_str = format(
-                product.date.astimezone(pytz.timezone('Europe/Moscow')),
-                'D M d Y H:i:s O'
-            )
+            date_str = format_datetime(product.date)
             item = {
                 "id": product.id,
                 "title": product.title,
