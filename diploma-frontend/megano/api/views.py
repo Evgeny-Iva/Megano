@@ -36,6 +36,7 @@ from .serializers import (
 )
 from .services.order_service import OrderService
 from .services.auth_service import AuthService
+from .services.payment_service import PaymentService
 
 
 logger = logging.getLogger(__name__)
@@ -1088,8 +1089,8 @@ class OrderCreateView(APIView):
 
         profile = request.user.profile
 
-        delivery_type = request.POST.get('deliveryType', 'free') if hasattr(request, 'POST') else 'free'
-        payment_type = request.POST.get('paymentType', 'online') if hasattr(request, 'POST') else 'online'
+        delivery_type = request.POST.get('deliveryType', 'free')
+        payment_type = request.POST.get('paymentType', 'online')
         city = request.POST.get('city', 'Не указан')
         address = request.POST.get('address', 'Не указан')
 
@@ -1250,53 +1251,13 @@ class PaymentView(APIView):
         """POST /payment/{id}/ - оплатить заказ"""
 
         try:
-            order = Order.objects.get(id=id, user=request.user)
+            order = get_object_or_404(Order, id=id, user=request.user)
 
-            data = request.data
-            errors = {}
-
-            number = data.get('number', data.get('number1', ''))
-            cleaned_number = number.replace(' ', '').replace('-', '')
-
-            if not cleaned_number.isdigit() or len(number) != 16:
-                errors['number'] = 'Номер карты должен содержать 16 цифр'
-
-            name = data.get('name', '')
-            if len(name.strip()) < 3:
-                errors['name'] = 'Введите имя владельца карты'
-
-            month = data.get('month', '')
-            if not month.isdigit() or int(month) < 1 or int(month) > 12:
-                errors['month'] = 'Месяц должен быть от 01 до 12'
-
-            year = data.get('year', '')
-            if not year.isdigit() or len(year) != 2:
-                errors['year'] = 'Год должен содержать 2 цифры'
-            else:
-                current_year = datetime.now().year
-                print(f"Current year: {current_year}")
-
-                if len(year) == 2:
-                    year_num = 2000 + int(year)
-                else:
-                    year_num = int(year)
-
-                print(f"Card year: {year_num}")
-
-                if year_num < current_year:
-                    errors['year'] = 'Срок действия карты истек'
-                else:
-                    print("Year validation passed")
-
-            code = data.get('code', '')
-            if not code.isdigit() or len(code) != 3:
-                errors['code'] = 'CVV код должен содержать 3 цифры'
-
-            if errors:
-                return Response(errors, status=400)
-
-            order.status = 'paid'
-            order.save()
+            try:
+                PaymentService.validate_card_data(request.data)
+                PaymentService.process_payment(order, request.data)
+            except ValidationError as e:
+                return Response(e.message_dict, status=400)
 
             return Response({
                 'success': True,
