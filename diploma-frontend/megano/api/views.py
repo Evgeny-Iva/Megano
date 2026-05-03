@@ -138,31 +138,33 @@ class SignInView(APIView):
             - 200 OK при успехе
             - 500 Internal Server Error при ошибке
         """
-
         try:
             data = json.loads(request.body)
+
             username = data.get('username', '').strip()
             password = data.get('password', '').strip()
-        except:
-            username = request.POST.get('username', '').strip()
-            password = request.POST.get('password', '').strip()
 
-        if not username or not password:
+            logger.info(f"SignUp attempt: name={name}, username={username}")
+
+            if not username or not password:
+                return Response(
+                    {'error': 'Username and password are required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            user = AuthService.authenticate_user(request, username, password)
+
+            if user is not None:
+                AuthService.login_user(request, user)
+                return Response(AuthService.build_user_response(user))
+
             return Response(
-                {'error': 'Username and password are required'},
-                status=status.HTTP_400_BAD_REQUEST
+                {'error': 'Invalid username or password'},
+                status=status.HTTP_401_UNAUTHORIZED
             )
 
-        user = AuthService.authenticate_user(request, username, password)
-
-        if user is not None:
-            AuthService.login_user(request, user)
-            return Response(AuthService.build_user_response(user))
-
-        return Response(
-            {'error': 'Invalid username or password'},
-            status=status.HTTP_401_UNAUTHORIZED
-        )
+        except json.JSONDecodeError:
+            return Response({'error': 'Invalid JSON'}, status=400)
 
 
 class SignUpView(APIView):
@@ -182,20 +184,13 @@ class SignUpView(APIView):
             - 500 Internal Server Error при ошибке
         """
         try:
-            raw = list(request.data.keys())[0] if request.data else '{}'
-            try:
-                data = json.loads(raw)
-            except:
-                return Response({'error': 'Invalid JSON'}, status=400)
+            data = json.loads(request.body)
 
             name = data.get('name', '').strip()
             username = data.get('username', '').strip()
             password = data.get('password', '').strip()
 
-            print(f"Используем: name='{name}', username='{username}'")
-
             logger.info(f"SignUp attempt: name={name}, username={username}")
-
 
             if not username:
                 logger.warning("Missing username")
@@ -211,24 +206,15 @@ class SignUpView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            if User.objects.filter(username=username).exists():
-                logger.warning(f"User {username} already exists")
-                return Response(
-                    {'error': 'Username already exists'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            try:
+                user = AuthService.register_user(username, password, name)
+                AuthService.login_user(request, user)
+                return Response(AuthService.build_user_response(user))
+            except ValidationError as e:
+                return Response({'error': str(e)}, status=400)
 
-            user = User.objects.create_user(
-                username=username,
-                password=password,
-                first_name=name
-            )
-
-            logger.info(f"User created: {user.id}")
-            return Response(status=status.HTTP_200_OK)
-
-        except Exception:
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except json.JSONDecodeError:
+            return Response({'error': 'Invalid JSON'}, status=400)
 
 
 class SignOutView(APIView):
