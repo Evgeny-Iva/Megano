@@ -3,6 +3,7 @@ import logging
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
 from rest_framework import status
+from django.core.exceptions import ValidationError
 
 
 logger = logging.getLogger(__name__)
